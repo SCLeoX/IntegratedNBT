@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "particle": "integrateddynamics:blocks/proxy_top",
+    "down": "integrateddynamics:blocks/proxy_top",
+    "up": "integrateddynamics:blocks/proxy_top",
+    "north": "integratednbt:blocks/nbt_extractor_front",
+    "east": "integrateddynamics:blocks/proxy_side",
+    "south": "integrateddynamics:blocks/proxy_back",
+    "west": "integrateddynamics:blocks/proxy_side"
+  }
+}

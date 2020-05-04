@@ -1,0 +1,16 @@
+[
+{
+  "modid": "integratednbt",
+  "name": "Integrated NBT",
+  "description": "Integrated NBT is an addon for Integrated Dynamics. It offers a simpler way of extracting deeply nested NBT values.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Rin Tepis"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": ["integrateddynamics"]
+}
+]

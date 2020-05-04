@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "rer",
+    "clc"
+  ],
+  "key": {
+    "c": {
+      "item": "integrateddynamics:crystalized_menril_chunk"
+    },
+    "e": {
+      "item": "minecraft:ender_pearl"
+    },
+    "r": {
+      "item": "minecraft:redstone"
+    },
+    "l": [{
+      "item": "integrateddynamics:logic_programmer",
+      "data": 0
+    }, {
+      "item": "integrateddynamics:portable_logic_programmer"
+    }]
+  },
+  "result": {
+    "item": "integratednbt:nbt_extractor_remote",
+    "count": 1
+  }
+}

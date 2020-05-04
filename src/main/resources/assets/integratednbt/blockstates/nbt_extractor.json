@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "integratednbt:nbt_extractor"
+    },
+    "facing=south": {
+      "model": "integratednbt:nbt_extractor",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "integratednbt:nbt_extractor",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "integratednbt:nbt_extractor",
+      "y": 90
+    }
+  }
+}

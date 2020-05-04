@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "rlr",
+    "cbc"
+  ],
+  "key": {
+    "c": {
+      "item": "integrateddynamics:crystalized_menril_chunk"
+    },
+    "r": {
+      "item": "minecraft:redstone"
+    },
+    "b": {
+      "item": "integrateddynamics:crystalized_menril_block"
+    },
+    "l": [{
+      "item": "integrateddynamics:logic_programmer",
+      "data": 0
+    }, {
+      "item": "integrateddynamics:portable_logic_programmer"
+    }]
+  },
+  "result": {
+    "item": "integratednbt:nbt_extractor",
+    "count": 1
+  }
+}
