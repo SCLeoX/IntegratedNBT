@@ -2,7 +2,7 @@ package me.tepis.integratednbt;
 
 import me.tepis.integratednbt.NBTExtractorRemoteRequestMessage.NBTExtractorRemoteRequestMessageHandler;
 import me.tepis.integratednbt.NBTExtractorUpdateExtractionPathMessage.NBTExtractorUpdateExtractionPathMessageHandler;
-import me.tepis.integratednbt.NBTExtractorUpdateTreeMessage.NBTExtractorUpdateTreeMessageHandler;
+import me.tepis.integratednbt.NBTExtractorUpdateClientMessage.NBTExtractorUpdateClientMessageHandler;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.item.Item;
@@ -55,8 +55,8 @@ public class IntegratedNBT {
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new NBTExtractorGuiHandler());
         int discriminator = -1;
         networkChannel.registerMessage(
-            NBTExtractorUpdateTreeMessageHandler.class,
-            NBTExtractorUpdateTreeMessage.class,
+            NBTExtractorUpdateClientMessageHandler.class,
+            NBTExtractorUpdateClientMessage.class,
             ++discriminator,
             Side.CLIENT
         );

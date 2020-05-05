@@ -4,6 +4,7 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraftforge.common.util.Constants.NBT;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -105,6 +106,7 @@ public class NBTPath {
     }
 
     private static final int MAX_EXTRACTION_DEPTH = 128;
+    private static final String KEY_PATH = "path";
     private static final String KEY_TYPE = "type";
     private static final String TYPE_KEY = "key";
     private static final String KEY_KEY = "key";
@@ -124,6 +126,9 @@ public class NBTPath {
 
     public static Optional<NBTPath> fromNBT(NBTBase nbtBase) {
         try {
+            if (nbtBase instanceof NBTTagCompound) {
+                nbtBase = ((NBTTagCompound) nbtBase).getTag(KEY_PATH);
+            }
             assert nbtBase instanceof NBTTagList;
             NBTTagList list = (NBTTagList) nbtBase;
             assert list.getTagType() != 10; /* Compound */
@@ -205,6 +210,12 @@ public class NBTPath {
             }
         }
         return list;
+    }
+
+    public NBTTagCompound toNBTCompound() {
+        NBTTagCompound compound = new NBTTagCompound();
+        compound.setTag(KEY_PATH, this.toNBT());
+        return compound;
     }
 
     public NBTBase extract(NBTBase source) {

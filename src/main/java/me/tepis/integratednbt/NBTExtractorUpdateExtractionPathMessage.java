@@ -11,6 +11,10 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
+/**
+ * From client to server;
+ * Sets the extraction path
+ */
 public class NBTExtractorUpdateExtractionPathMessage implements IMessage {
     public static class NBTExtractorUpdateExtractionPathMessageHandler
         implements IMessageHandler<NBTExtractorUpdateExtractionPathMessage, IMessage> {

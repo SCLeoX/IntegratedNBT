@@ -7,6 +7,10 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
+/**
+ * From client to server;
+ * Requests to open the GUI for a NBT Extractor at location
+ */
 public class NBTExtractorRemoteRequestMessage implements IMessage {
     public static class NBTExtractorRemoteRequestMessageHandler
         implements IMessageHandler<NBTExtractorRemoteRequestMessage, IMessage> {

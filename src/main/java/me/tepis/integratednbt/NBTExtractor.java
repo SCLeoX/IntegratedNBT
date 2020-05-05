@@ -171,7 +171,6 @@ public class NBTExtractor extends CabledBlock {
         if (tileentity instanceof NBTExtractorTileEntity) {
             NBTExtractorTileEntity nbtExtractorTileEntity = (NBTExtractorTileEntity) tileentity;
             nbtExtractorTileEntity.refreshVariables(true);
-            playerMP.connection.sendPacket(nbtExtractorTileEntity.getUpdatePacket());
             playerMP.openGui(
                 IntegratedNBT.getInstance(),
                 0,

@@ -9,8 +9,6 @@ import net.minecraft.inventory.ItemStackHelper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ITickable;
@@ -259,7 +257,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     /**
      * Whether should send update on next tick
      */
-    private boolean shouldSendUpdate = false;
+    private boolean shouldUpdateOutVariable = false;
     private NBTPath extractionPath = new NBTPath();
     private byte defaultNBTId = 1;
 
@@ -282,7 +280,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
 
     public void setExtractionPath(NBTPath extractionPath) {
         this.extractionPath = extractionPath;
-        this.markDirty();
+        this.updateOutVariable();
     }
 
     @Override
@@ -290,7 +288,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         super.markDirty();
         if (!this.world.isRemote) {
             this.refreshVariables(true);
-            this.shouldSendUpdate = true;
+            this.shouldUpdateOutVariable = true;
         }
     }
 
@@ -474,6 +472,51 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         }
     }
 
+    private void updateOutVariable() {
+        if (!this.itemStacks.get(VAR_OUT_SLOT).isEmpty()) {
+            this.refreshVariables(true);
+            IVariableFacadeHandlerRegistry registry =
+                IntegratedDynamics._instance.getRegistryManager()
+                    .getRegistry(IVariableFacadeHandlerRegistry.class);
+            IVariableFacade variableFacade =
+                NBTExtractorTileEntity.this.evaluator.getVariableFacade();
+            if (variableFacade != null) {
+                int sourceNBTId = variableFacade.getId();
+                IVariableFacadeFactory<NBTExtractedVariableFacade> factory =
+                    new IVariableFacadeFactory<NBTExtractedVariableFacade>() {
+                        @Override
+                        public NBTExtractedVariableFacade create(boolean generateId) {
+                            return new NBTExtractedVariableFacade(
+                                generateId,
+                                sourceNBTId,
+                                NBTExtractorTileEntity.this.extractionPath,
+                                NBTExtractorTileEntity.this.defaultNBTId
+                            );
+                        }
+
+                        @Override
+                        public NBTExtractedVariableFacade create(int id) {
+                            return new NBTExtractedVariableFacade(
+                                id,
+                                sourceNBTId,
+                                NBTExtractorTileEntity.this.extractionPath,
+                                NBTExtractorTileEntity.this.defaultNBTId
+                            );
+                        }
+                    };
+                ItemStack variableItemStack = registry.writeVariableFacadeItem(
+                    true,
+                    this.itemStacks.get(VAR_OUT_SLOT),
+                    NBTExtractedVariableFacadeHandler.getInstance(),
+                    factory,
+                    null,
+                    this.getBlockType()
+                );
+                this.itemStacks.set(VAR_OUT_SLOT, variableItemStack);
+            }
+        }
+    }
+
     @Override
     public void update() {
         if (!this.world.isRemote) {
@@ -481,68 +524,10 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
                 this.shouldRefreshVariable = false;
                 this.refreshVariables(true);
             }
-            if (this.shouldSendUpdate) {
-                this.shouldSendUpdate = false;
-                if (!this.itemStacks.get(VAR_OUT_SLOT).isEmpty()) {
-                    this.refreshVariables(true);
-                    IVariableFacadeHandlerRegistry registry =
-                        IntegratedDynamics._instance.getRegistryManager()
-                            .getRegistry(IVariableFacadeHandlerRegistry.class);
-                    IVariableFacade variableFacade =
-                        NBTExtractorTileEntity.this.evaluator.getVariableFacade();
-                    if (variableFacade != null) {
-                        int sourceNBTId = variableFacade.getId();
-                        IVariableFacadeFactory<NBTExtractedVariableFacade> factory =
-                            new IVariableFacadeFactory<NBTExtractedVariableFacade>() {
-                                @Override
-                                public NBTExtractedVariableFacade create(boolean generateId) {
-                                    return new NBTExtractedVariableFacade(
-                                        generateId,
-                                        sourceNBTId,
-                                        NBTExtractorTileEntity.this.extractionPath,
-                                        NBTExtractorTileEntity.this.defaultNBTId
-                                    );
-                                }
-
-                                @Override
-                                public NBTExtractedVariableFacade create(int id) {
-                                    return new NBTExtractedVariableFacade(
-                                        id,
-                                        sourceNBTId,
-                                        NBTExtractorTileEntity.this.extractionPath,
-                                        NBTExtractorTileEntity.this.defaultNBTId
-                                    );
-                                }
-                            };
-                        ItemStack variableItemStack = registry.writeVariableFacadeItem(
-                            true,
-                            this.itemStacks.get(VAR_OUT_SLOT),
-                            NBTExtractedVariableFacadeHandler.getInstance(),
-                            factory,
-                            null,
-                            this.getBlockType()
-                        );
-                        this.itemStacks.set(VAR_OUT_SLOT, variableItemStack);
-                    }
-                }
-
-                IBlockState blockState = this.world.getBlockState(NBTExtractorTileEntity.this.pos);
-                this.world.notifyBlockUpdate(
-                    NBTExtractorTileEntity.this.pos,
-                    blockState,
-                    blockState,
-                    3
-                );
+            if (this.shouldUpdateOutVariable) {
+                this.updateOutVariable();
             }
         }
-    }
-
-    @Nonnull
-    @Override
-    public SPacketUpdateTileEntity getUpdatePacket() {
-        NBTTagCompound tag = new NBTTagCompound();
-        this.writeToNBT(tag);
-        return new SPacketUpdateTileEntity(this.pos, 1, tag);
     }
 
     @Override
@@ -564,11 +549,6 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     public ITextComponent getDisplayName() {
         ITextComponent superDisplayName = super.getDisplayName();
         return superDisplayName == null ? new TextComponentString("") : superDisplayName;
-    }
-
-    @Override
-    public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
-        this.readFromNBT(pkt.getNbtCompound());
     }
 
     @Override

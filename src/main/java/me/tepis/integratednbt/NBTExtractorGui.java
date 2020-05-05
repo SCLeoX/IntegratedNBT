@@ -1,8 +1,7 @@
 package me.tepis.integratednbt;
 
-import me.tepis.integratednbt.NBTExtractorUpdateTreeMessage.ErrorCode;
+import me.tepis.integratednbt.NBTExtractorUpdateClientMessage.ErrorCode;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.inventory.Slot;
@@ -46,8 +45,10 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
     private static final int TOP_BORDER_SIZE = 24;
     private static final int SIDE_BORDER_SIZE = 8;
     private static final double CENTERED_TEXT_MAX_RATIO = 0.8;
+    // These are static because GUI sometimes after receiving the update packets.
     private static ErrorCode errorCode = null;
     private static NBTTagCompound nbt;
+    private static NBTPath extractionPath = null;
     private NBTTreeViewer treeViewer;
     private NBTExtractorContainer nbtExtractorContainer;
     /**
@@ -89,7 +90,7 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
 
             @Override
             public NBTPath getSelectedPath() {
-                return nbtExtractorContainer.getNbtExtractorEntity().getExtractionPath();
+                return extractionPath;
             }
         };
     }
@@ -100,6 +101,18 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
 
     public static void updateNBT(NBTTagCompound nbt) {
         NBTExtractorGui.nbt = nbt;
+    }
+
+    public static void updateExtractionPath(NBTPath extractionPath) {
+        NBTExtractorGui.extractionPath = extractionPath;
+    }
+
+    @Override
+    public void onGuiClosed() {
+        errorCode = null;
+        nbt = null;
+        extractionPath = null;
+        super.onGuiClosed();
     }
 
     @Override

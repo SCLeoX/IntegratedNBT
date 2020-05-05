@@ -1,6 +1,6 @@
 package me.tepis.integratednbt;
 
-import me.tepis.integratednbt.NBTExtractorUpdateTreeMessage.ErrorCode;
+import me.tepis.integratednbt.NBTExtractorUpdateClientMessage.ErrorCode;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -73,8 +73,9 @@ public class NBTExtractorContainer extends Container {
     private static final int INVENTORY_END = 38; // Exclusive
     private InventoryPlayer playerInventory;
     private NBTExtractorTileEntity nbtExtractorEntity;
-    private ErrorCode lastSentErrorCode = null;
-    private NBTTagCompound lastSentNBTCompound = null;
+    private ErrorCode clientErrorCode = null;
+    private NBTTagCompound clientNBT = null;
+    private NBTPath clientPath = null;
 
     public NBTExtractorContainer(
         InventoryPlayer playerInventory,
@@ -107,52 +108,52 @@ public class NBTExtractorContainer extends Container {
     public void detectAndSendChanges() {
         super.detectAndSendChanges();
         if (!this.nbtExtractorEntity.getWorld().isRemote) {
+            ErrorCode errorCode;
+            NBTTagCompound nbt = this.clientNBT;
             if (!this.getSlot(SRC_NBT).getHasStack()) {
-                this.lastSentErrorCode = null;
+                // Client will do this automatically
+                errorCode = this.clientErrorCode = null;
             } else {
-                if (!(this.playerInventory.player instanceof EntityPlayerMP)) {
-                    IntegratedNBT.getLogger()
-                        .error("Failed to cast EntityPlayer to EntityPlayerMP.");
-                } else {
-                    EntityPlayerMP playerMP = (EntityPlayerMP) this.playerInventory.player;
-                    NBTTagCompound nbtTagCompound = null;
-                    ErrorCode errorCode;
-                    try {
-                        IVariable<?> variable = this.nbtExtractorEntity.getSrcNBTVariable();
-                        if (variable == null) {
-                            errorCode = ErrorCode.EVAL_ERROR;
-                        } else {
-                            IValue value = variable.getValue();
-                            if (value instanceof ValueNbt) {
-                                nbtTagCompound = ((ValueNbt) value).getRawValue();
-                                errorCode = ErrorCode.NO_ERROR;
-                            } else {
-                                errorCode = ErrorCode.TYPE_ERROR;
-                            }
-                        }
-                    } catch (EvaluationException | PartStateException exception) {
-                        exception.printStackTrace();
+                try {
+                    IVariable<?> variable = this.nbtExtractorEntity.getSrcNBTVariable();
+                    if (variable == null) {
                         errorCode = ErrorCode.EVAL_ERROR;
-                    } catch (Exception exception) {
-                        errorCode = ErrorCode.UNEXPECTED_ERROR;
-                        IntegratedNBT.getLogger()
-                            .error(
-                                "Unexpected error occurred while evaluating variable.",
-                                exception
-                            );
+                    } else {
+                        IValue value = variable.getValue();
+                        if (value instanceof ValueNbt) {
+                            nbt = ((ValueNbt) value).getRawValue();
+                            errorCode = ErrorCode.NO_ERROR;
+                        } else {
+                            errorCode = ErrorCode.TYPE_ERROR;
+                        }
                     }
-                    if (errorCode != this.lastSentErrorCode
-                        || !Objects.equals(nbtTagCompound, this.lastSentNBTCompound)
-                    ) {
-                        this.lastSentErrorCode = errorCode;
-                        this.lastSentNBTCompound = nbtTagCompound;
-                        IntegratedNBT.getNetworkChannel()
-                            .sendTo(new NBTExtractorUpdateTreeMessage(
-                                errorCode,
-                                nbtTagCompound
-                            ), playerMP);
-                    }
+                } catch (EvaluationException | PartStateException exception) {
+                    exception.printStackTrace();
+                    errorCode = ErrorCode.EVAL_ERROR;
+                } catch (Exception exception) {
+                    errorCode = ErrorCode.UNEXPECTED_ERROR;
+                    IntegratedNBT.getLogger().error(
+                        "Unexpected error occurred while evaluating variable.",
+                        exception
+                    );
                 }
+            }
+            NBTExtractorUpdateClientMessage message = new NBTExtractorUpdateClientMessage();
+            if (!Objects.equals(this.clientNBT, nbt)) {
+                message.updateNBT(nbt);
+                this.clientNBT = nbt;
+            }
+            if (this.clientErrorCode != errorCode) {
+                message.updateErrorCode(errorCode);
+                this.clientErrorCode = errorCode;
+            }
+            if (this.clientPath != this.nbtExtractorEntity.getExtractionPath()) {
+                message.updateExtractionPath(this.nbtExtractorEntity.getExtractionPath());
+                this.clientPath = this.nbtExtractorEntity.getExtractionPath();
+            }
+            if (!message.isEmpty()) {
+                EntityPlayerMP playerMP = (EntityPlayerMP) this.playerInventory.player;
+                IntegratedNBT.getNetworkChannel().sendTo(message, playerMP);
             }
         }
     }
