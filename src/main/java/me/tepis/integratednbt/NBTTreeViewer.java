@@ -13,27 +13,21 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagLong;
 import net.minecraft.nbt.NBTTagShort;
 import net.minecraft.nbt.NBTTagString;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.client.config.GuiUtils;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValueType;
 import org.lwjgl.input.Mouse;
-
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Set;
 
-import static me.tepis.integratednbt.NBTExtractorGui.NBT_EXTRACTOR_GUI_TEXTURES;
+import static me.tepis.integratednbt.NBTExtractorGui.GUI_TEXTURE;
 import static me.tepis.integratednbt.NBTExtractorGui.SCREEN_EDGE;
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
 import static org.lwjgl.opengl.GL11.glTranslated;
 
 public abstract class NBTTreeViewer {
-    public static final ResourceLocation ONE_PIXEL_TEXTURE = new ResourceLocation(
-        "integratednbt",
-        "textures/gui/1x1.png"
-    );
     private static final long SMOOTH_SCROLLING_TRANSITION_TIME_MS = 75;
     private static final double SCROLL_SPEED = 1d / 4;
     private static final int LINE_SPACE = 1;
@@ -51,33 +45,35 @@ public abstract class NBTTreeViewer {
     private static final int SCROLL_BAR_COLOR = 0xCCCCCC;
     private static final int SCROLL_BAR_PADDING = 2;
     private static final int SCROLL_BAR_WIDTH = 3;
-
     private static final int EXPAND_BUTTON_SIZE = 7;
-    private static final TexturePart PLUS_BUTTON = new TexturePart(
+    private static final TexturePart PLUS_BUTTON = GUI_TEXTURE.createPart(
         48,
         0,
         EXPAND_BUTTON_SIZE,
         EXPAND_BUTTON_SIZE
     );
-    private static final TexturePart PLUS_BUTTON_HOVER = new TexturePart(
+    private static final TexturePart PLUS_BUTTON_HOVER = GUI_TEXTURE.createPart(
         48,
         9,
         EXPAND_BUTTON_SIZE,
         EXPAND_BUTTON_SIZE
     );
-    private static final TexturePart MINUS_BUTTON = new TexturePart(
+    private static final TexturePart MINUS_BUTTON = GUI_TEXTURE.createPart(
         57,
         0,
         EXPAND_BUTTON_SIZE,
         EXPAND_BUTTON_SIZE
     );
-    private static final TexturePart MINUS_BUTTON_HOVER = new TexturePart(
+    private static final TexturePart MINUS_BUTTON_HOVER = GUI_TEXTURE.createPart(
         57,
         9,
         EXPAND_BUTTON_SIZE,
         EXPAND_BUTTON_SIZE
     );
-    private static final TexturePart PURE_COLOR = new TexturePart(0, 0, 1, 1);
+    private static final TexturePart PURE_COLOR = new Texture(
+        "integratednbt",
+        "textures/gui/1x1.png"
+    ).createPart(0, 0, 1, 1);
 
     private final Set<NBTPath> expandedPaths;
     private final Wrapper<Integer> scrollTop;
@@ -167,9 +163,6 @@ public abstract class NBTTreeViewer {
                         : (": " + value)
                 ));
             if (isSelected || this.mouseX < rightBoundary) {
-                Minecraft.getMinecraft()
-                    .getTextureManager()
-                    .bindTexture(ONE_PIXEL_TEXTURE);
                 GlHelper.colorInt(isSelected ? SELECTED_COLOR : HIGHLIGHT_COLOR);
                 if (isThreeSideInBounds && this.mouseX < rightBoundary) {
                     isHovering = true;
@@ -210,9 +203,6 @@ public abstract class NBTTreeViewer {
         if (hovering) {
             this.hoveringExpandableButton = this.currentPath.copy();
         }
-        Minecraft.getMinecraft()
-            .getTextureManager()
-            .bindTexture(NBT_EXTRACTOR_GUI_TEXTURES);
         GlHelper.colorInt(EXPAND_COLOR);
         part.renderTo(this.gui, this.currentX, this.currentY);
         this.currentX += EXPAND_BUTTON_SIZE + EXPAND_BUTTON_RIGHT_MARGIN;
@@ -238,9 +228,6 @@ public abstract class NBTTreeViewer {
             glTranslated(0, this.renderScroll, 0);
             this.maxScroll = Math.max(totalHeight - this.height, 0);
             if (this.maxScroll != 0) {
-                Minecraft.getMinecraft()
-                    .getTextureManager()
-                    .bindTexture(ONE_PIXEL_TEXTURE);
                 GlHelper.colorInt(SCREEN_BACKGROUND_COLOR);
                 PURE_COLOR.renderTo(
                     this.gui,

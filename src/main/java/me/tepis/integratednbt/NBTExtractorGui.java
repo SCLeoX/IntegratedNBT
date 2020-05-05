@@ -2,12 +2,12 @@ package me.tepis.integratednbt;
 
 import me.tepis.integratednbt.NBTExtractorUpdateTreeMessage.ErrorCode;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.inventory.Slot;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -25,21 +25,21 @@ import static org.lwjgl.opengl.GL11.glTranslated;
 @SideOnly(Side.CLIENT)
 public class NBTExtractorGui extends ExtendedGuiContainer {
     public static final int SCREEN_EDGE = 4;
-    public static final ResourceLocation NBT_EXTRACTOR_GUI_TEXTURES = new ResourceLocation(
+    public static final Texture GUI_TEXTURE = new Texture(
         "integratednbt",
         "textures/gui/nbt_extractor.png"
     );
     // Different parts of the texture; See texture file for definitions
-    private static final TexturePart PART0 = new TexturePart(0, 0, 8, 24);
-    private static final TexturePart PART1 = new TexturePart(12, 0, 4, 24);
-    private static final TexturePart PART2 = new TexturePart(20, 0, 8, 24);
-    private static final TexturePart PART3 = new TexturePart(0, 28, 8, 4);
-    private static final TexturePart PART4 = new TexturePart(12, 28, 4, 4);
-    private static final TexturePart PART5 = new TexturePart(20, 28, 8, 4);
-    private static final TexturePart PART6 = new TexturePart(0, 36, 8, 8);
-    private static final TexturePart PART7 = new TexturePart(12, 36, 4, 8);
-    private static final TexturePart PART8 = new TexturePart(20, 36, 178, 110);
-    private static final TexturePart PART9 = new TexturePart(202, 36, 8, 8);
+    private static final TexturePart PART0 = GUI_TEXTURE.createPart(0, 0, 8, 24);
+    private static final TexturePart PART1 = GUI_TEXTURE.createPart(12, 0, 4, 24);
+    private static final TexturePart PART2 = GUI_TEXTURE.createPart(20, 0, 8, 24);
+    private static final TexturePart PART3 = GUI_TEXTURE.createPart(0, 28, 8, 4);
+    private static final TexturePart PART4 = GUI_TEXTURE.createPart(12, 28, 4, 4);
+    private static final TexturePart PART5 = GUI_TEXTURE.createPart(20, 28, 8, 4);
+    private static final TexturePart PART6 = GUI_TEXTURE.createPart(0, 36, 8, 8);
+    private static final TexturePart PART7 = GUI_TEXTURE.createPart(12, 36, 4, 8);
+    private static final TexturePart PART8 = GUI_TEXTURE.createPart(20, 36, 178, 110);
+    private static final TexturePart PART9 = GUI_TEXTURE.createPart(202, 36, 8, 8);
     private static final int BASE_PADDING = 200;
     private static final int INVENTORY_WIDTH = 178;
     private static final int INVENTORY_HEIGHT = 110;
@@ -183,55 +183,13 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
             this.treeViewer.render(nbt, mouseX, mouseY);
         }
         glDisable(GL_SCISSOR_TEST);
-
-
-//        int left = (this.width - WIDTH) / 2;
-//        this.drawTexturedModalRect(left, PADDING, 0, 0, WIDTH, TOP_HEIGHT);
-//        int treeTop = PADDING + TOP_HEIGHT;
-//        int treeHeight = this.height - PADDING * 2 - TOP_HEIGHT - BOTTOM_HEIGHT;
-//        this.drawTexturedModalRectScalable(
-//            left,
-//            treeTop,
-//            WIDTH,
-//            treeHeight,
-//            0,
-//            TOP_HEIGHT,
-//            WIDTH,
-//            TREE_SRC_HEIGHT
-//        );
-//        int inventoryTop = treeTop + treeHeight;
-//        this.drawTexturedModalRect(
-//            left,
-//            inventoryTop,
-//            0,
-//            TOP_HEIGHT + TREE_SRC_HEIGHT,
-//            WIDTH,
-//            BOTTOM_HEIGHT
-//        );
-//        String name = "NBT Extractor";
-//        this.fontRenderer.drawString(name, left + 8, PADDING + 9, 4210752);
-
-
-//        GL11.glEnable(GL11.GL_SCISSOR_TEST);
-////        GL11.glColorMask(false, false, false, false);
-////        GL11.glStencilFunc(GL_NEVER, 1, 0xFF);
-////        GL11.glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
-////        GL11.glStencilMask(0xFF);
-////        GL11.glClear(GL_STENCIL_BUFFER_BIT);
-////        GL11.glColorMask(true, true, true, true);
-////        GL11.glStencilMask(0x00);
-////        GL11.glStencilFunc(GL_EQUAL, 0, 0xFF);
-////        GL11.glScissor(left + 30, VERTICAL_PADDING + TOP_HEIGHT, 100, 20);
-////        this.drawTexturedModalRect(, 0, 0, WIDTH, TOP_HEIGHT);
-//
-//        GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 
     private void renderGuiParts() {
         int padding = this.padding;
         int screenWidth = this.screenWidth;
         int screenHeight = this.screenHeight;
-        this.mc.getTextureManager().bindTexture(NBT_EXTRACTOR_GUI_TEXTURES);
+        GUI_TEXTURE.bind();
         PART0.renderTo(this, padding, padding);
         PART1.renderTo(this, padding + SIDE_BORDER_SIZE, padding, screenWidth, -1);
         PART2.renderTo(this, this.width - padding - SIDE_BORDER_SIZE, padding);
