@@ -232,8 +232,8 @@ public abstract class NBTTreeViewer {
                 PURE_COLOR.renderTo(
                     this.gui,
                     this.width - SCROLL_BAR_PADDING * 2 - SCROLL_BAR_WIDTH,
-                    0,
-                    SCROLL_BAR_PADDING * 2 + SCROLL_BAR_WIDTH,
+                    -1,
+                    SCROLL_BAR_PADDING * 2 + SCROLL_BAR_WIDTH + 2,
                     this.height
                 );
                 GlHelper.colorInt(SCROLL_BAR_COLOR);
