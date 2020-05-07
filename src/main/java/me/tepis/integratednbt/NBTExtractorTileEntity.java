@@ -411,12 +411,31 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         if (this.world.getTileEntity(this.pos) != this) {
             return false;
         } else {
-            return player.getDistanceSq(
+            if (player.getDistanceSq(
                 (double) this.pos.getX() + 0.5D,
                 (double) this.pos.getY() + 0.5D,
                 (double) this.pos.getZ() + 0.5D
-            ) <= 64.0D;
+            ) <= 64.0D) {
+                return true;
+            }
+            return (this.isRemote(player.getHeldItemMainhand()) ||
+                this.isRemote(player.getHeldItemOffhand()));
         }
+    }
+
+    /**
+     * Tests whether the given item stack is a remote for this NBT Extractor.
+     */
+    private boolean isRemote(ItemStack itemStack) {
+        if (itemStack.getItem() != NBTExtractorRemote.getInstance()) {
+            return false;
+        }
+        NBTTagCompound tag = NBTExtractorRemote.getInstance().getModNBT(itemStack);
+        return (tag.hasKey("world")) &&
+            (tag.getInteger("world") == this.world.provider.getDimension()) &&
+            (tag.getInteger("x") == this.pos.getX()) &&
+            (tag.getInteger("y") == this.pos.getY()) &&
+            (tag.getInteger("z") == this.pos.getZ());
     }
 
     @Override
@@ -571,11 +590,28 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     }
 
     @Nullable
+    private ItemStack getVariableByOperatorMode() {
+        return this.getVariableUsingValue(ValueOperator.of(new NBTExtractionOperator(
+            this.extractionPath,
+            this.defaultNBTId
+        )));
+    }
+
+    @Nullable
+    private ItemStack getVariableByValueMode() {
+        this.refreshVariables(true);
+        NBTBase extractedNBT = this.extractionPath.extract(this.lastEvaluatedNBT);
+        IValue value = extractedNBT == null
+            ? NBTValueConverter.getDefaultValue(this.defaultNBTId)
+            : NBTValueConverter.mapNBTToValue(extractedNBT);
+        return this.getVariableUsingValue(value);
+    }
+
+    @Nullable
     @SuppressWarnings( {"rawtypes", "unchecked"})
     private ItemStack getVariableUsingValue(IValue value) {
         IVariableFacadeHandlerRegistry registry = IntegratedDynamics._instance.getRegistryManager()
             .getRegistry(IVariableFacadeHandlerRegistry.class);
-        NBTBase extractedNBT = this.extractionPath.extract(this.lastEvaluatedNBT);
         if (value == null) {
             return null;
         }
@@ -597,24 +633,6 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
             null,
             this.getBlockType()
         );
-    }
-
-    @Nullable
-    private ItemStack getVariableByValueMode() {
-        this.refreshVariables(true);
-        NBTBase extractedNBT = this.extractionPath.extract(this.lastEvaluatedNBT);
-        IValue value = extractedNBT == null
-            ? NBTValueConverter.getDefaultValue(this.defaultNBTId)
-            : NBTValueConverter.mapNBTToValue(extractedNBT);
-        return this.getVariableUsingValue(value);
-    }
-
-    @Nullable
-    private ItemStack getVariableByOperatorMode() {
-        return this.getVariableUsingValue(ValueOperator.of(new NBTExtractionOperator(
-            this.extractionPath,
-            this.defaultNBTId
-        )));
     }
 
     @Override

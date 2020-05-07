@@ -80,7 +80,7 @@ public class NBTExtractorRemote extends Item {
         IntegratedNBT.getNetworkChannel().sendToServer(new NBTExtractorRemoteRequestMessage());
     }
 
-    private NBTTagCompound getModNBT(ItemStack itemStack) {
+    public NBTTagCompound getModNBT(ItemStack itemStack) {
         return itemStack.getOrCreateSubCompound(IntegratedNBT.MODID);
     }
 
