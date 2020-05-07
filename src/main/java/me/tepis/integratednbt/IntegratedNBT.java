@@ -25,7 +25,8 @@ import net.minecraftforge.registries.IForgeRegistry;
 import org.apache.logging.log4j.Logger;
 import org.cyclops.integrateddynamics.core.item.VariableFacadeHandlerRegistry;
 
-@Mod(modid = IntegratedNBT.MODID, name = IntegratedNBT.NAME, version = IntegratedNBT.VERSION)
+@Mod(modid = IntegratedNBT.MODID, name = IntegratedNBT.NAME, version = IntegratedNBT.VERSION,
+    dependencies = "required-after:integrateddynamics@[1.1.2,);")
 public class IntegratedNBT {
     public static final String MODID = "integratednbt";
     public static final String NAME = "Integrated NBT";
