@@ -5,12 +5,16 @@
   "description": "Integrated NBT is an addon for Integrated Dynamics. It offers a simpler way of extracting deeply nested NBT values.",
   "version": "${version}",
   "mcversion": "${mcversion}",
-  "url": "",
+  "url": "https://www.curseforge.com/minecraft/mc-mods/integrated-nbt",
   "updateUrl": "",
-  "authorList": ["Rin Tepis"],
+  "authorList": [
+    "Rin Tepis"
+  ],
   "credits": "",
   "logoFile": "",
   "screenshots": [],
-  "dependencies": ["integrateddynamics"]
+  "dependencies": [
+    "integrateddynamics"
+  ]
 }
 ]
