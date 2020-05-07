@@ -5,6 +5,7 @@ import me.tepis.integratednbt.ByteMaskMaker;
 import me.tepis.integratednbt.NBTExtractorGui;
 import me.tepis.integratednbt.NBTExtractorOutputMode;
 import me.tepis.integratednbt.NBTPath;
+import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -20,18 +21,20 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
         implements IMessageHandler<NBTExtractorUpdateClientMessage, IMessage> {
         @Override
         public IMessage onMessage(NBTExtractorUpdateClientMessage message, MessageContext ctx) {
-            if (message.nbt != null) {
-                NBTExtractorGui.updateNBT(message.nbt);
-            }
-            if (message.errorCode != null) {
-                NBTExtractorGui.updateError(message.errorCode);
-            }
-            if (message.path != null) {
-                NBTExtractorGui.updateExtractionPath(message.path);
-            }
-            if (message.outputMode != null) {
-                NBTExtractorGui.updateOutputMode(message.outputMode);
-            }
+            Minecraft.getMinecraft().addScheduledTask(() -> {
+                if (message.nbt != null) {
+                    NBTExtractorGui.updateNBT(message.nbt);
+                }
+                if (message.errorCode != null) {
+                    NBTExtractorGui.updateError(message.errorCode);
+                }
+                if (message.path != null) {
+                    NBTExtractorGui.updateExtractionPath(message.path);
+                }
+                if (message.outputMode != null) {
+                    NBTExtractorGui.updateOutputMode(message.outputMode);
+                }
+            });
             return null;
         }
     }

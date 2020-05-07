@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import me.tepis.integratednbt.NBTExtractorRemote;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.EnumHand;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -18,15 +19,17 @@ public class NBTExtractorRemoteRequestMessage implements IMessage {
 
         @Override
         public IMessage onMessage(NBTExtractorRemoteRequestMessage message, MessageContext ctx) {
-            EntityPlayerMP player = ctx.getServerHandler().player;
-            NBTExtractorRemote remote = NBTExtractorRemote.getInstance();
-            if (player.getHeldItem(EnumHand.MAIN_HAND).getItem() == remote) {
-                NBTExtractorRemote.getInstance()
-                    .serverUse(player.getHeldItem(EnumHand.MAIN_HAND), player);
-            } else if (player.getHeldItem(EnumHand.OFF_HAND).getItem() == remote) {
-                NBTExtractorRemote.getInstance()
-                    .serverUse(player.getHeldItem(EnumHand.OFF_HAND), player);
-            }
+            ((WorldServer) ctx.getServerHandler().player.world).addScheduledTask(() -> {
+                EntityPlayerMP player = ctx.getServerHandler().player;
+                NBTExtractorRemote remote = NBTExtractorRemote.getInstance();
+                if (player.getHeldItem(EnumHand.MAIN_HAND).getItem() == remote) {
+                    NBTExtractorRemote.getInstance()
+                        .serverUse(player.getHeldItem(EnumHand.MAIN_HAND), player);
+                } else if (player.getHeldItem(EnumHand.OFF_HAND).getItem() == remote) {
+                    NBTExtractorRemote.getInstance()
+                        .serverUse(player.getHeldItem(EnumHand.OFF_HAND), player);
+                }
+            });
             return null;
         }
     }

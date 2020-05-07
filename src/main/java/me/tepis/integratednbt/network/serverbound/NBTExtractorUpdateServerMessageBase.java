@@ -6,6 +6,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -21,23 +22,25 @@ public abstract class NBTExtractorUpdateServerMessageBase implements IMessage {
 
         @Override
         public final IMessage onMessage(T message, MessageContext ctx) {
-            EntityPlayerMP player = ctx.getServerHandler().player;
-            World world = player.world;
-            if (!world.isBlockLoaded(message.blockPos)) {
-                return null;
-            }
-            TileEntity tileEntity = world.getTileEntity(message.blockPos);
-            if (tileEntity == null) {
-                return null;
-            }
-            if (!(tileEntity instanceof NBTExtractorTileEntity)) {
-                return null;
-            }
-            NBTExtractorTileEntity nbtExtractorTileEntity = (NBTExtractorTileEntity) tileEntity;
-            if (!nbtExtractorTileEntity.isUsableByPlayer(player)) {
-                return null;
-            }
-            this.updateTileEntity(message, nbtExtractorTileEntity);
+            ((WorldServer) ctx.getServerHandler().player.world).addScheduledTask(() -> {
+                EntityPlayerMP player = ctx.getServerHandler().player;
+                World world = player.world;
+                if (!world.isBlockLoaded(message.blockPos)) {
+                    return;
+                }
+                TileEntity tileEntity = world.getTileEntity(message.blockPos);
+                if (tileEntity == null) {
+                    return;
+                }
+                if (!(tileEntity instanceof NBTExtractorTileEntity)) {
+                    return;
+                }
+                NBTExtractorTileEntity nbtExtractorTileEntity = (NBTExtractorTileEntity) tileEntity;
+                if (!nbtExtractorTileEntity.isUsableByPlayer(player)) {
+                    return;
+                }
+                this.updateTileEntity(message, nbtExtractorTileEntity);
+            });
             return null;
         }
 
