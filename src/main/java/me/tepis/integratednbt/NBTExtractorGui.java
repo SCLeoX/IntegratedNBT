@@ -1,7 +1,10 @@
 package me.tepis.integratednbt;
 
-import me.tepis.integratednbt.NBTExtractorUpdateClientMessage.ErrorCode;
+import me.tepis.integratednbt.network.clientbound.NBTExtractorUpdateClientMessage.ErrorCode;
+import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateExtractionPathMessage;
+import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateOutputModeMessage;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.inventory.Slot;
@@ -11,6 +14,8 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import static org.lwjgl.opengl.GL11.GL_SCISSOR_TEST;
 import static org.lwjgl.opengl.GL11.glDisable;
@@ -39,16 +44,94 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
     private static final TexturePart PART7 = GUI_TEXTURE.createPart(12, 36, 4, 8);
     private static final TexturePart PART8 = GUI_TEXTURE.createPart(20, 36, 178, 110);
     private static final TexturePart PART9 = GUI_TEXTURE.createPart(202, 36, 8, 8);
+    private static final int BUTTON_SIZE = 12;
+    private static final TexturePart BUTTON_UNKNOWN = GUI_TEXTURE.createPart(
+        78,
+        0,
+        BUTTON_SIZE,
+        BUTTON_SIZE
+    );
+    private static final TexturePart BUTTON_UNKNOWN_HOVER = GUI_TEXTURE.createPart(
+        78,
+        12,
+        BUTTON_SIZE,
+        BUTTON_SIZE
+    );
+    private static final TexturePart BUTTON_REFERENCE_MODE = GUI_TEXTURE.createPart(
+        90,
+        0,
+        BUTTON_SIZE,
+        BUTTON_SIZE
+    );
+    private static final TexturePart BUTTON_REFERENCE_MODE_HOVER = GUI_TEXTURE.createPart(
+        90,
+        12,
+        BUTTON_SIZE,
+        BUTTON_SIZE
+    );
+    private static final TexturePart BUTTON_OPERATOR_MODE = GUI_TEXTURE.createPart(
+        102,
+        0,
+        BUTTON_SIZE,
+        BUTTON_SIZE
+    );
+    private static final TexturePart BUTTON_OPERATOR_MODE_HOVER = GUI_TEXTURE.createPart(
+        102,
+        12,
+        BUTTON_SIZE,
+        BUTTON_SIZE
+    );
+    private static final TexturePart BUTTON_VALUE_MODE = GUI_TEXTURE.createPart(
+        114,
+        0,
+        BUTTON_SIZE,
+        BUTTON_SIZE
+    );
+    private static final TexturePart BUTTON_VALUE_MODE_HOVER = GUI_TEXTURE.createPart(
+        114,
+        12,
+        BUTTON_SIZE,
+        BUTTON_SIZE
+    );
+    private static final TexturePart BUTTON_REFRESH_ON = GUI_TEXTURE.createPart(
+        126,
+        0,
+        BUTTON_SIZE,
+        BUTTON_SIZE
+    );
+    private static final TexturePart BUTTON_REFRESH_ON_HOVER = GUI_TEXTURE.createPart(
+        126,
+        12,
+        BUTTON_SIZE,
+        BUTTON_SIZE
+    );
+    private static final TexturePart BUTTON_REFRESH_OFF = GUI_TEXTURE.createPart(
+        138,
+        0,
+        BUTTON_SIZE,
+        BUTTON_SIZE
+    );
+    private static final TexturePart BUTTON_REFRESH_OFF_HOVER = GUI_TEXTURE.createPart(
+        138,
+        12,
+        BUTTON_SIZE,
+        BUTTON_SIZE
+    );
     private static final int BASE_PADDING = 200;
     private static final int INVENTORY_WIDTH = 178;
     private static final int INVENTORY_HEIGHT = 110;
     private static final int TOP_BORDER_SIZE = 24;
     private static final int SIDE_BORDER_SIZE = 8;
     private static final double CENTERED_TEXT_MAX_RATIO = 0.8;
+    private static final int BUTTON_SPACING = 2;
+
     // These are static because GUI sometimes after receiving the update packets.
+    private static NBTExtractorGui lastInstance = null;
     private static ErrorCode errorCode = null;
     private static NBTTagCompound nbt;
     private static NBTPath extractionPath = null;
+    private static NBTExtractorOutputMode outputMode = null;
+
     private NBTTreeViewer treeViewer;
     private NBTExtractorContainer nbtExtractorContainer;
     /**
@@ -67,9 +150,11 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
      * The scale factor of Minecraft; Updated by updateCalculations
      */
     private int scaleFactor;
+    private HoverTextImageButton outputModeButton;
 
     public NBTExtractorGui(NBTExtractorContainer nbtExtractorContainer) {
         super(nbtExtractorContainer);
+        NBTExtractorGui.lastInstance = this;
         this.nbtExtractorContainer = nbtExtractorContainer;
         NBTExtractorTileEntity tileEntity = nbtExtractorContainer.getNbtExtractorEntity();
         this.treeViewer = new NBTTreeViewer(
@@ -107,11 +192,67 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
         NBTExtractorGui.extractionPath = extractionPath;
     }
 
+    public static void updateOutputMode(NBTExtractorOutputMode outputMode) {
+        NBTExtractorGui.outputMode = outputMode;
+        if (lastInstance != null) {
+            lastInstance.updateOutputModeButton();
+        }
+    }
+
+    private void updateOutputModeButton() {
+        if (this.outputModeButton == null) {
+            return;
+        }
+        ArrayList<String> messages = new ArrayList<>();
+        if (outputMode == null) {
+            this.outputModeButton.setTexture(
+                BUTTON_UNKNOWN,
+                BUTTON_UNKNOWN_HOVER
+            );
+            messages.add(I18n.format(
+                "integratednbt:nbt_extractor.output_mode",
+                I18n.format("integratednbt:nbt_extractor.loading")
+            ));
+        } else if (outputMode == NBTExtractorOutputMode.REFERENCE) {
+            this.outputModeButton.setTexture(
+                BUTTON_REFERENCE_MODE,
+                BUTTON_REFERENCE_MODE_HOVER
+            );
+            messages.add(I18n.format(
+                "integratednbt:nbt_extractor.output_mode",
+                I18n.format("integratednbt:nbt_extractor.output_mode.reference")
+            ));
+        } else if (outputMode == NBTExtractorOutputMode.OPERATOR) {
+            this.outputModeButton.setTexture(
+                BUTTON_OPERATOR_MODE,
+                BUTTON_OPERATOR_MODE_HOVER
+            );
+            messages.add(I18n.format(
+                "integratednbt:nbt_extractor.output_mode",
+                I18n.format("integratednbt:nbt_extractor.output_mode.operator")
+            ));
+        } else {
+            this.outputModeButton.setTexture(
+                BUTTON_VALUE_MODE,
+                BUTTON_VALUE_MODE_HOVER
+            );
+            messages.add(I18n.format(
+                "integratednbt:nbt_extractor.output_mode",
+                I18n.format("integratednbt:nbt_extractor.output_mode.value")
+            ));
+        }
+        messages.addAll(Arrays.asList(I18n.format(
+            "integratednbt:nbt_extractor.output_mode.description").split("\\\\n")));
+        this.outputModeButton.setHoverText(messages);
+    }
+
     @Override
     public void onGuiClosed() {
+        lastInstance = null;
         errorCode = null;
         nbt = null;
         extractionPath = null;
+        outputMode = null;
         super.onGuiClosed();
     }
 
@@ -137,6 +278,14 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
             this.screenWidth,
             this.screenHeight
         );
+        this.outputModeButton = new HoverTextImageButton(
+            this,
+            0,
+            this.width - this.padding - 7 - BUTTON_SIZE,
+            this.padding + 7
+        );
+        this.updateOutputModeButton();
+        this.addButton(this.outputModeButton);
     }
 
     /**
@@ -164,6 +313,7 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
         this.drawDefaultBackground();
         super.drawScreen(mouseX, mouseY, partialTicks);
         this.renderHoveredToolTip(mouseX, mouseY);
+        this.outputModeButton.drawHover(mouseX, mouseY);
     }
 
     @Override
@@ -196,6 +346,20 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
             this.treeViewer.render(nbt, mouseX, mouseY);
         }
         glDisable(GL_SCISSOR_TEST);
+    }
+
+    @Override
+    protected void actionPerformed(GuiButton button) {
+        if (button == this.outputModeButton) {
+            if (outputMode == null) {
+                return;
+            }
+            IntegratedNBT.getNetworkChannel().sendToServer(new NBTExtractorUpdateOutputModeMessage(
+                this.nbtExtractorContainer.getNbtExtractorEntity().getPos(),
+                NBTExtractorOutputMode.values()[(outputMode.ordinal() + 1) %
+                    NBTExtractorOutputMode.values().length]
+            ));
+        }
     }
 
     private void renderGuiParts() {

@@ -7,7 +7,6 @@ import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValueType;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IVariable;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeNbt.ValueNbt;
-import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypes;
 
 public class NBTExtractedVariable extends VariableAdapter<IValue> {
     private IVariable<ValueNbt> sourceNBTVariable;
@@ -31,11 +30,11 @@ public class NBTExtractedVariable extends VariableAdapter<IValue> {
         try {
             this.ensureCachedValue();
             if (this.cachedValue == null) {
-                return ValueTypes.CATEGORY_ANY;
+                return NBTValueConverter.getDefaultValue(this.defaultNBTId).getType();
             }
             return (IValueType<IValue>) NBTValueConverter.mapNBTToValueType(this.cachedValue);
         } catch (EvaluationException ex) {
-            return ValueTypes.CATEGORY_ANY;
+            return NBTValueConverter.getDefaultValue(this.defaultNBTId).getType();
         }
     }
 

@@ -4,7 +4,6 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraftforge.common.util.Constants.NBT;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -13,6 +12,8 @@ import java.util.stream.Collectors;
 public class NBTPath {
     private interface Segment {
         String getDisplayText();
+
+        String getCompactDisplayText();
 
         NBTBase access(NBTBase parent);
     }
@@ -46,6 +47,11 @@ public class NBTPath {
         @Override
         public String getDisplayText() {
             return this.key;
+        }
+
+        @Override
+        public String getCompactDisplayText() {
+            return "." + this.key;
         }
 
         @Override
@@ -89,6 +95,11 @@ public class NBTPath {
         @Override
         public String getDisplayText() {
             return this.displayText;
+        }
+
+        @Override
+        public String getCompactDisplayText() {
+            return "[" + this.index + "]";
         }
 
         @Override
@@ -194,6 +205,12 @@ public class NBTPath {
         return this.segments.hashCode();
     }
 
+    public NBTTagCompound toNBTCompound() {
+        NBTTagCompound compound = new NBTTagCompound();
+        compound.setTag(KEY_PATH, this.toNBT());
+        return compound;
+    }
+
     public NBTTagList toNBT() {
         NBTTagList list = new NBTTagList();
         for (Segment segment : this.segments) {
@@ -210,12 +227,6 @@ public class NBTPath {
             }
         }
         return list;
-    }
-
-    public NBTTagCompound toNBTCompound() {
-        NBTTagCompound compound = new NBTTagCompound();
-        compound.setTag(KEY_PATH, this.toNBT());
-        return compound;
     }
 
     public NBTBase extract(NBTBase source) {
@@ -236,6 +247,16 @@ public class NBTPath {
                 this.segments.stream()
                     .map(Segment::getDisplayText)
                     .collect(Collectors.joining(" §7➡§r "));
+        }
+    }
+
+    public String getCompactDisplayText() {
+        if (this.segments.isEmpty()) {
+            return "id";
+        } else {
+            return this.segments.stream()
+                .map(Segment::getCompactDisplayText)
+                .collect(Collectors.joining());
         }
     }
 

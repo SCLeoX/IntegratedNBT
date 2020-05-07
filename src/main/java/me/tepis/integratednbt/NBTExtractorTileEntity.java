@@ -7,6 +7,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ItemStackHelper;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
@@ -28,6 +29,7 @@ import org.cyclops.integrateddynamics.IntegratedDynamics;
 import org.cyclops.integrateddynamics.api.block.cable.ICable;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IVariable;
+import org.cyclops.integrateddynamics.api.item.IValueTypeVariableFacade;
 import org.cyclops.integrateddynamics.api.item.IVariableFacade;
 import org.cyclops.integrateddynamics.api.item.IVariableFacadeHandlerRegistry;
 import org.cyclops.integrateddynamics.api.item.IVariableFacadeHandlerRegistry.IVariableFacadeFactory;
@@ -42,9 +44,11 @@ import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkE
 import org.cyclops.integrateddynamics.capability.path.PathElementTile;
 import org.cyclops.integrateddynamics.capability.variablecontainer.VariableContainerDefault;
 import org.cyclops.integrateddynamics.core.evaluate.InventoryVariableEvaluator;
+import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeOperator.ValueOperator;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypes;
 import org.cyclops.integrateddynamics.core.helper.CableHelpers;
 import org.cyclops.integrateddynamics.core.helper.NetworkHelpers;
+import org.cyclops.integrateddynamics.core.item.ValueTypeVariableFacade;
 import org.cyclops.integrateddynamics.core.network.event.VariableContentsUpdatedEvent;
 
 import javax.annotation.Nonnull;
@@ -260,27 +264,21 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     private boolean shouldUpdateOutVariable = false;
     private NBTPath extractionPath = new NBTPath();
     private byte defaultNBTId = 1;
+    private NBTExtractorOutputMode outputMode = NBTExtractorOutputMode.REFERENCE;
+    private NBTTagCompound lastEvaluatedNBT = null;
 
     public NBTExtractorTileEntity() {
         this.expandedPaths = new HashSet<>();
         this.expandedPaths.add(new NBTPath());
     }
 
-    public void setDefaultNBTId(byte defaultNBTId) {
-        if (defaultNBTId < 1 || defaultNBTId > 12) {
-            this.defaultNBTId = 1;
-        } else {
-            this.defaultNBTId = defaultNBTId;
-        }
+    public NBTExtractorOutputMode getOutputMode() {
+        return this.outputMode;
     }
 
-    public NBTPath getExtractionPath() {
-        return this.extractionPath;
-    }
-
-    public void setExtractionPath(NBTPath extractionPath) {
-        this.extractionPath = extractionPath;
-        this.updateOutVariable();
+    public void setOutputMode(NBTExtractorOutputMode outputMode) {
+        this.outputMode = outputMode;
+        this.markDirty();
     }
 
     @Override
@@ -302,6 +300,28 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
             this,
             sendVariablesUpdateEvent
         );
+    }
+
+    public void setDefaultNBTId(byte defaultNBTId) {
+        if (defaultNBTId < 1 || defaultNBTId > 12) {
+            this.defaultNBTId = 1;
+        } else {
+            this.defaultNBTId = defaultNBTId;
+        }
+        this.markDirty();
+    }
+
+    public NBTPath getExtractionPath() {
+        return this.extractionPath;
+    }
+
+    public void setExtractionPath(NBTPath extractionPath) {
+        this.extractionPath = extractionPath;
+        this.markDirty();
+    }
+
+    public void setLastEvaluatedNBT(NBTTagCompound lastEvaluatedNBT) {
+        this.lastEvaluatedNBT = lastEvaluatedNBT;
     }
 
     public HashSet<NBTPath> getExpandedPaths() {
@@ -472,51 +492,6 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         }
     }
 
-    private void updateOutVariable() {
-        if (!this.itemStacks.get(VAR_OUT_SLOT).isEmpty()) {
-            this.refreshVariables(true);
-            IVariableFacadeHandlerRegistry registry =
-                IntegratedDynamics._instance.getRegistryManager()
-                    .getRegistry(IVariableFacadeHandlerRegistry.class);
-            IVariableFacade variableFacade =
-                NBTExtractorTileEntity.this.evaluator.getVariableFacade();
-            if (variableFacade != null) {
-                int sourceNBTId = variableFacade.getId();
-                IVariableFacadeFactory<NBTExtractedVariableFacade> factory =
-                    new IVariableFacadeFactory<NBTExtractedVariableFacade>() {
-                        @Override
-                        public NBTExtractedVariableFacade create(boolean generateId) {
-                            return new NBTExtractedVariableFacade(
-                                generateId,
-                                sourceNBTId,
-                                NBTExtractorTileEntity.this.extractionPath,
-                                NBTExtractorTileEntity.this.defaultNBTId
-                            );
-                        }
-
-                        @Override
-                        public NBTExtractedVariableFacade create(int id) {
-                            return new NBTExtractedVariableFacade(
-                                id,
-                                sourceNBTId,
-                                NBTExtractorTileEntity.this.extractionPath,
-                                NBTExtractorTileEntity.this.defaultNBTId
-                            );
-                        }
-                    };
-                ItemStack variableItemStack = registry.writeVariableFacadeItem(
-                    true,
-                    this.itemStacks.get(VAR_OUT_SLOT),
-                    NBTExtractedVariableFacadeHandler.getInstance(),
-                    factory,
-                    null,
-                    this.getBlockType()
-                );
-                this.itemStacks.set(VAR_OUT_SLOT, variableItemStack);
-            }
-        }
-    }
-
     @Override
     public void update() {
         if (!this.world.isRemote) {
@@ -528,6 +503,118 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
                 this.updateOutVariable();
             }
         }
+    }
+
+    private void updateOutVariable() {
+        if (!this.itemStacks.get(VAR_OUT_SLOT).isEmpty()) {
+            ItemStack result = null;
+            switch (this.outputMode) {
+                case REFERENCE:
+                    result = this.getVariableByReferenceMode();
+                    break;
+                case OPERATOR:
+                    result = this.getVariableByOperatorMode();
+                    break;
+                case VALUE:
+                    result = this.getVariableByValueMode();
+                    break;
+            }
+            if (result != null) {
+                this.itemStacks.set(VAR_OUT_SLOT, result);
+            }
+        }
+    }
+
+    @Nullable
+    private ItemStack getVariableByReferenceMode() {
+        this.refreshVariables(true);
+        IVariableFacadeHandlerRegistry registry =
+            IntegratedDynamics._instance.getRegistryManager()
+                .getRegistry(IVariableFacadeHandlerRegistry.class);
+        IVariableFacade variableFacade =
+            NBTExtractorTileEntity.this.evaluator.getVariableFacade();
+        if (variableFacade != null) {
+            int sourceNBTId = variableFacade.getId();
+            IVariableFacadeFactory<NBTExtractedVariableFacade> factory =
+                new IVariableFacadeFactory<NBTExtractedVariableFacade>() {
+                    @Override
+                    public NBTExtractedVariableFacade create(boolean generateId) {
+                        return new NBTExtractedVariableFacade(
+                            generateId,
+                            sourceNBTId,
+                            NBTExtractorTileEntity.this.extractionPath,
+                            NBTExtractorTileEntity.this.defaultNBTId
+                        );
+                    }
+
+                    @Override
+                    public NBTExtractedVariableFacade create(int id) {
+                        return new NBTExtractedVariableFacade(
+                            id,
+                            sourceNBTId,
+                            NBTExtractorTileEntity.this.extractionPath,
+                            NBTExtractorTileEntity.this.defaultNBTId
+                        );
+                    }
+                };
+            return registry.writeVariableFacadeItem(
+                true,
+                this.itemStacks.get(VAR_OUT_SLOT),
+                NBTExtractedVariableFacadeHandler.getInstance(),
+                factory,
+                null,
+                this.getBlockType()
+            );
+        } else {
+            return null;
+        }
+    }
+
+    @Nullable
+    @SuppressWarnings( {"rawtypes", "unchecked"})
+    private ItemStack getVariableUsingValue(IValue value) {
+        IVariableFacadeHandlerRegistry registry = IntegratedDynamics._instance.getRegistryManager()
+            .getRegistry(IVariableFacadeHandlerRegistry.class);
+        NBTBase extractedNBT = this.extractionPath.extract(this.lastEvaluatedNBT);
+        if (value == null) {
+            return null;
+        }
+        return registry.writeVariableFacadeItem(
+            true,
+            this.itemStacks.get(VAR_OUT_SLOT),
+            ValueTypes.REGISTRY,
+            new IVariableFacadeHandlerRegistry.IVariableFacadeFactory<IValueTypeVariableFacade>() {
+                @Override
+                public IValueTypeVariableFacade create(boolean generateId) {
+                    return new ValueTypeVariableFacade(generateId, value.getType(), value);
+                }
+
+                @Override
+                public IValueTypeVariableFacade create(int id) {
+                    return new ValueTypeVariableFacade(id, value.getType(), value);
+                }
+            },
+            null,
+            this.getBlockType()
+        );
+    }
+
+    @Nullable
+    private ItemStack getVariableByValueMode() {
+        this.refreshVariables(true);
+        NBTBase extractedNBT = this.extractionPath.extract(this.lastEvaluatedNBT);
+        IValue value = extractedNBT == null
+            ? NBTValueConverter.getDefaultValue(this.defaultNBTId)
+            : NBTValueConverter.mapNBTToValue(extractedNBT);
+        return this.getVariableUsingValue(value);
+    }
+
+    @Nullable
+    private ItemStack getVariableByOperatorMode() {
+        return this.getVariableUsingValue(ValueOperator.of(new NBTExtractionOperator(
+            this.extractionPath,
+            this.defaultNBTId
+        )));
     }
 
     @Override

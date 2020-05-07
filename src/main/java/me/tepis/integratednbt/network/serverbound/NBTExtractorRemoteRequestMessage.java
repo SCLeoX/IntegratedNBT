@@ -1,6 +1,7 @@
-package me.tepis.integratednbt;
+package me.tepis.integratednbt.network.serverbound;
 
 import io.netty.buffer.ByteBuf;
+import me.tepis.integratednbt.NBTExtractorRemote;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.EnumHand;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;

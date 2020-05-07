@@ -1,6 +1,10 @@
-package me.tepis.integratednbt;
+package me.tepis.integratednbt.network.clientbound;
 
 import io.netty.buffer.ByteBuf;
+import me.tepis.integratednbt.ByteMaskMaker;
+import me.tepis.integratednbt.NBTExtractorGui;
+import me.tepis.integratednbt.NBTExtractorOutputMode;
+import me.tepis.integratednbt.NBTPath;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -25,6 +29,9 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
             if (message.path != null) {
                 NBTExtractorGui.updateExtractionPath(message.path);
             }
+            if (message.outputMode != null) {
+                NBTExtractorGui.updateOutputMode(message.outputMode);
+            }
             return null;
         }
     }
@@ -33,11 +40,13 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
     private static final byte MASK_NBT = maskMaker.nextMask();
     private static final byte MASK_ERROR_CODE = maskMaker.nextMask();
     private static final byte MASK_EXTRACTION_PATH = maskMaker.nextMask();
+    private static final byte MASK_OUTPUT_MODE = maskMaker.nextMask();
 
     private byte updated = 0;
     private ErrorCode errorCode;
     private NBTTagCompound nbt;
     private NBTPath path;
+    private NBTExtractorOutputMode outputMode;
 
     public void updateNBT(NBTTagCompound nbt) {
         this.nbt = nbt;
@@ -52,6 +61,11 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
     public void updateExtractionPath(NBTPath path) {
         this.path = path;
         this.updated |= MASK_EXTRACTION_PATH;
+    }
+
+    public void updateOutputMode(NBTExtractorOutputMode outputMode) {
+        this.outputMode = outputMode;
+        this.updated |= MASK_OUTPUT_MODE;
     }
 
     public boolean isEmpty() {
@@ -72,6 +86,9 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
         if ((this.updated & MASK_EXTRACTION_PATH) > 0) {
             this.path = NBTPath.fromNBT(ByteBufUtils.readTag(buf)).orElse(new NBTPath());
         }
+        if ((this.updated & MASK_OUTPUT_MODE) > 0) {
+            this.outputMode = NBTExtractorOutputMode.values()[buf.readByte()];
+        }
     }
 
     @Override
@@ -85,6 +102,9 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
         }
         if ((this.updated & MASK_EXTRACTION_PATH) > 0) {
             ByteBufUtils.writeTag(buf, this.path.toNBTCompound());
+        }
+        if ((this.updated & MASK_OUTPUT_MODE) > 0) {
+            buf.writeByte(this.outputMode.ordinal());
         }
     }
 

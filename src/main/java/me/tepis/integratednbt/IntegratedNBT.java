@@ -1,8 +1,13 @@
 package me.tepis.integratednbt;
 
-import me.tepis.integratednbt.NBTExtractorRemoteRequestMessage.NBTExtractorRemoteRequestMessageHandler;
-import me.tepis.integratednbt.NBTExtractorUpdateExtractionPathMessage.NBTExtractorUpdateExtractionPathMessageHandler;
-import me.tepis.integratednbt.NBTExtractorUpdateClientMessage.NBTExtractorUpdateClientMessageHandler;
+import me.tepis.integratednbt.network.clientbound.NBTExtractorUpdateClientMessage;
+import me.tepis.integratednbt.network.clientbound.NBTExtractorUpdateClientMessage.NBTExtractorUpdateClientMessageHandler;
+import me.tepis.integratednbt.network.serverbound.NBTExtractorRemoteRequestMessage;
+import me.tepis.integratednbt.network.serverbound.NBTExtractorRemoteRequestMessage.NBTExtractorRemoteRequestMessageHandler;
+import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateExtractionPathMessage;
+import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateExtractionPathMessage.NBTExtractorUpdateExtractionPathMessageHandler;
+import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateOutputModeMessage;
+import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateOutputModeMessage.NBTExtractorUpdateOutputModeMessageHandler;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.item.Item;
@@ -23,6 +28,7 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.registries.IForgeRegistry;
 import org.apache.logging.log4j.Logger;
+import org.cyclops.integrateddynamics.core.evaluate.operator.OperatorRegistry;
 import org.cyclops.integrateddynamics.core.item.VariableFacadeHandlerRegistry;
 
 @Mod(modid = IntegratedNBT.MODID, name = IntegratedNBT.NAME, version = IntegratedNBT.VERSION,
@@ -73,6 +79,12 @@ public class IntegratedNBT {
             ++discriminator,
             Side.SERVER
         );
+        networkChannel.registerMessage(
+            NBTExtractorUpdateOutputModeMessageHandler.class,
+            NBTExtractorUpdateOutputModeMessage.class,
+            ++discriminator,
+            Side.SERVER
+        );
         MinecraftForge.EVENT_BUS.register(this);
     }
 
@@ -83,6 +95,7 @@ public class IntegratedNBT {
     public void postInit(FMLPostInitializationEvent event) {
         VariableFacadeHandlerRegistry.getInstance()
             .registerHandler(new NBTExtractedVariableFacadeHandler());
+        OperatorRegistry.getInstance().registerSerializer(new NBTExtractionOperatorSerializer());
     }
 
     @SubscribeEvent

@@ -31,28 +31,7 @@ import java.util.stream.StreamSupport;
 
 public abstract class NBTValueConverter {
     public static IValueType<? extends IValue> mapNBTToValueType(NBTBase nbt) {
-        switch (nbt.getId()) {
-            case 1: // Byte
-            case 2: // Short
-            case 3: // Int
-                return ValueTypes.INTEGER;
-            case 4: // Long
-                return ValueTypes.LONG;
-            case 5: // Float
-            case 6: // Double
-                return ValueTypes.DOUBLE;
-            case 7: // Byte Array
-            case 9: // List
-            case 11: // Int Array
-            case 12: // Long Array
-                return ValueTypes.LIST;
-            case 8: // String
-                return ValueTypes.STRING;
-            case 10: // Compound
-                return ValueTypes.NBT;
-            default:
-                throw new RuntimeException("Unexpected NBT id:" + nbt.getId());
-        }
+        return mapNBTIDToValueType(nbt.getId());
     }
 
     public static String getDefaultValueDisplayText(int nbtId) {
@@ -101,6 +80,31 @@ public abstract class NBTValueConverter {
             case 10: // Compound
             default:
                 return ValueNbt.of(new NBTTagCompound());
+        }
+    }
+
+    public static IValueType<?> mapNBTIDToValueType(int nbtId) {
+        switch (nbtId) {
+            case 1: // Byte
+            case 2: // Short
+            case 3: // Int
+                return ValueTypes.INTEGER;
+            case 4: // Long
+                return ValueTypes.LONG;
+            case 5: // Float
+            case 6: // Double
+                return ValueTypes.DOUBLE;
+            case 7: // Byte Array
+            case 9: // List
+            case 11: // Int Array
+            case 12: // Long Array
+                return ValueTypes.LIST;
+            case 8: // String
+                return ValueTypes.STRING;
+            case 10: // Compound
+                return ValueTypes.NBT;
+            default:
+                throw new RuntimeException("Unexpected NBT id:" + nbtId);
         }
     }
 

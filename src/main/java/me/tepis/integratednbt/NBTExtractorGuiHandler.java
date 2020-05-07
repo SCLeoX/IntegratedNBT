@@ -7,7 +7,6 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.IGuiHandler;
 
 public class NBTExtractorGuiHandler implements IGuiHandler {
-
     @Override
     public Object getServerGuiElement(
         int id,

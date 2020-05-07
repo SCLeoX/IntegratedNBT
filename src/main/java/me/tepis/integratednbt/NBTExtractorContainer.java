@@ -1,6 +1,7 @@
 package me.tepis.integratednbt;
 
-import me.tepis.integratednbt.NBTExtractorUpdateClientMessage.ErrorCode;
+import me.tepis.integratednbt.network.clientbound.NBTExtractorUpdateClientMessage;
+import me.tepis.integratednbt.network.clientbound.NBTExtractorUpdateClientMessage.ErrorCode;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -76,7 +77,7 @@ public class NBTExtractorContainer extends Container {
     private ErrorCode clientErrorCode = null;
     private NBTTagCompound clientNBT = null;
     private NBTPath clientPath = null;
-
+    private NBTExtractorOutputMode clientOutputMode = null;
     public NBTExtractorContainer(
         InventoryPlayer playerInventory,
         NBTExtractorTileEntity nbtExtractorEntity
@@ -147,13 +148,24 @@ public class NBTExtractorContainer extends Container {
                 message.updateErrorCode(errorCode);
                 this.clientErrorCode = errorCode;
             }
-            if (this.clientPath != this.nbtExtractorEntity.getExtractionPath()) {
-                message.updateExtractionPath(this.nbtExtractorEntity.getExtractionPath());
-                this.clientPath = this.nbtExtractorEntity.getExtractionPath();
+            NBTPath nbtPath = this.nbtExtractorEntity.getExtractionPath();
+            if (this.clientPath != nbtPath) {
+                message.updateExtractionPath(nbtPath);
+                this.clientPath = nbtPath;
+            }
+            NBTExtractorOutputMode outputMode = this.nbtExtractorEntity.getOutputMode();
+            if (this.clientOutputMode != outputMode) {
+                message.updateOutputMode(outputMode);
+                this.clientOutputMode = outputMode;
             }
             if (!message.isEmpty()) {
                 EntityPlayerMP playerMP = (EntityPlayerMP) this.playerInventory.player;
                 IntegratedNBT.getNetworkChannel().sendTo(message, playerMP);
+            }
+            if (errorCode == ErrorCode.NO_ERROR) {
+                this.nbtExtractorEntity.setLastEvaluatedNBT(nbt);
+            } else {
+                this.nbtExtractorEntity.setLastEvaluatedNBT(null);
             }
         }
     }
