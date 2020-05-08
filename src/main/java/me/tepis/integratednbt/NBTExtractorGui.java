@@ -1,6 +1,7 @@
 package me.tepis.integratednbt;
 
 import me.tepis.integratednbt.network.clientbound.NBTExtractorUpdateClientMessage.ErrorCode;
+import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateAutoRefreshMessage;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateExtractionPathMessage;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateOutputModeMessage;
 import net.minecraft.client.Minecraft;
@@ -134,6 +135,7 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
     private static NBTPath extractionPath = null;
     private static NBTExtractorOutputMode outputMode = null;
     private static UnlocalizedString errorMessage = null;
+    private static Boolean autoRefresh = null;
 
     private NBTTreeViewer treeViewer;
     private NBTExtractorContainer nbtExtractorContainer;
@@ -154,6 +156,7 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
      */
     private int scaleFactor;
     private HoverTextImageButton outputModeButton;
+    private HoverTextImageButton autoRefreshButton;
 
     public NBTExtractorGui(NBTExtractorContainer nbtExtractorContainer) {
         super(nbtExtractorContainer);
@@ -253,6 +256,13 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
         NBTExtractorGui.errorMessage = errorMessage;
     }
 
+    public static void updateAutoRefresh(Boolean autoRefresh) {
+        NBTExtractorGui.autoRefresh = autoRefresh;
+        if (lastInstance != null) {
+            lastInstance.updateAutoRefreshButton();
+        }
+    }
+
     @Override
     public void onGuiClosed() {
         lastInstance = null;
@@ -294,6 +304,14 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
         );
         this.updateOutputModeButton();
         this.addButton(this.outputModeButton);
+        this.autoRefreshButton = new HoverTextImageButton(
+            this,
+            1,
+            this.width - this.padding - 7 - BUTTON_SIZE * 2 - BUTTON_SPACING,
+            this.padding + 7
+        );
+        this.updateAutoRefreshButton();
+        this.addButton(this.autoRefreshButton);
     }
 
     /**
@@ -309,6 +327,44 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
         this.screenHeight = this.height - 2 * this.padding - TOP_BORDER_SIZE - INVENTORY_HEIGHT;
     }
 
+    private void updateAutoRefreshButton() {
+        if (this.autoRefreshButton == null) {
+            return;
+        }
+        ArrayList<String> messages = new ArrayList<>();
+        if (autoRefresh == null) {
+            this.autoRefreshButton.setTexture(
+                BUTTON_UNKNOWN,
+                BUTTON_UNKNOWN_HOVER
+            );
+            messages.add(I18n.format(
+                "integratednbt:nbt_extractor.auto_refresh",
+                I18n.format("integratednbt:nbt_extractor.loading")
+            ));
+        } else if (autoRefresh) {
+            this.autoRefreshButton.setTexture(
+                BUTTON_REFRESH_ON,
+                BUTTON_REFRESH_ON_HOVER
+            );
+            messages.add(I18n.format(
+                "integratednbt:nbt_extractor.auto_refresh",
+                I18n.format("integratednbt:nbt_extractor.auto_refresh.on")
+            ));
+        } else {
+            this.autoRefreshButton.setTexture(
+                BUTTON_REFRESH_OFF,
+                BUTTON_REFRESH_OFF_HOVER
+            );
+            messages.add(I18n.format(
+                "integratednbt:nbt_extractor.auto_refresh",
+                I18n.format("integratednbt:nbt_extractor.auto_refresh.off")
+            ));
+        }
+        messages.addAll(Arrays.asList(I18n.format(
+            "integratednbt:nbt_extractor.auto_refresh.description").split("\\\\n")));
+        this.autoRefreshButton.setHoverText(messages);
+    }
+
     @Override
     public void handleMouseInput() throws IOException {
         super.handleMouseInput();
@@ -322,6 +378,7 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
         super.drawScreen(mouseX, mouseY, partialTicks);
         this.renderHoveredToolTip(mouseX, mouseY);
         this.outputModeButton.drawHover(mouseX, mouseY);
+        this.autoRefreshButton.drawHover(mouseX, mouseY);
     }
 
     @Override
@@ -366,6 +423,14 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
                 this.nbtExtractorContainer.getNbtExtractorEntity().getPos(),
                 NBTExtractorOutputMode.values()[(outputMode.ordinal() + 1) %
                     NBTExtractorOutputMode.values().length]
+            ));
+        } else if (button == this.autoRefreshButton) {
+            if (autoRefresh == null) {
+                return;
+            }
+            IntegratedNBT.getNetworkChannel().sendToServer(new NBTExtractorUpdateAutoRefreshMessage(
+                this.nbtExtractorContainer.getNbtExtractorEntity().getPos(),
+                !autoRefresh
             ));
         }
     }

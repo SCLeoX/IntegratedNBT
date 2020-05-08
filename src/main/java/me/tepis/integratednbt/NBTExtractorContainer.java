@@ -80,6 +80,7 @@ public class NBTExtractorContainer extends Container {
     private NBTPath clientPath = null;
     private NBTExtractorOutputMode clientOutputMode = null;
     private UnlocalizedString clientErrorMessage = null;
+    private Boolean clientAutoRefresh = null;
 
     public NBTExtractorContainer(
         InventoryPlayer playerInventory,
@@ -120,18 +121,26 @@ public class NBTExtractorContainer extends Container {
                 errorCode = this.clientErrorCode = null;
             } else {
                 try {
-                    IVariable<?> variable = this.nbtExtractorEntity.getSrcNBTVariable();
-                    if (variable == null) {
-                        errorCode = ErrorCode.EVAL_ERROR;
-                        errorMessage = this.nbtExtractorEntity.getFirstErrorMessage();
-                    } else {
-                        IValue value = variable.getValue();
-                        if (value instanceof ValueNbt) {
-                            nbt = ((ValueNbt) value).getRawValue();
-                            errorCode = ErrorCode.NO_ERROR;
+                    NBTTagCompound frozenValue = this.nbtExtractorEntity.getFrozenValue();
+                    if (frozenValue == null) {
+                        // If there is no frozen value (either frozen mode is not on, or it is
+                        // on, but a value has not been evaluated yet.)
+                        IVariable<?> variable = this.nbtExtractorEntity.getSrcNBTVariable();
+                        if (variable == null) {
+                            errorCode = ErrorCode.EVAL_ERROR;
+                            errorMessage = this.nbtExtractorEntity.getFirstErrorMessage();
                         } else {
-                            errorCode = ErrorCode.TYPE_ERROR;
+                            IValue value = variable.getValue();
+                            if (value instanceof ValueNbt) {
+                                nbt = ((ValueNbt) value).getRawValue();
+                                errorCode = ErrorCode.NO_ERROR;
+                            } else {
+                                errorCode = ErrorCode.TYPE_ERROR;
+                            }
                         }
+                    } else {
+                        errorCode = ErrorCode.NO_ERROR;
+                        nbt = frozenValue;
                     }
                 } catch (EvaluationException | PartStateException exception) {
                     exception.printStackTrace();
@@ -168,14 +177,19 @@ public class NBTExtractorContainer extends Container {
                 message.updateErrorMessage(errorMessage);
                 this.clientErrorMessage = errorMessage;
             }
+            if (this.clientAutoRefresh == null ||
+                this.nbtExtractorEntity.isAutoRefresh() != this.clientAutoRefresh) {
+                message.updateAutoRefresh(this.nbtExtractorEntity.isAutoRefresh());
+                this.clientAutoRefresh = this.nbtExtractorEntity.isAutoRefresh();
+            }
             if (!message.isEmpty()) {
                 EntityPlayerMP playerMP = (EntityPlayerMP) this.playerInventory.player;
                 IntegratedNBT.getNetworkChannel().sendTo(message, playerMP);
             }
             if (errorCode == ErrorCode.NO_ERROR) {
-                this.nbtExtractorEntity.setLastEvaluatedNBT(nbt);
+                this.nbtExtractorEntity.updateLastEvaluatedNBT(nbt);
             } else {
-                this.nbtExtractorEntity.setLastEvaluatedNBT(null);
+                this.nbtExtractorEntity.updateLastEvaluatedNBT(null);
             }
         }
     }

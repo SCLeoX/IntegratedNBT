@@ -40,6 +40,9 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
                 if (message.isUpdated(MASK_ERROR_MESSAGE)) {
                     NBTExtractorGui.updateErrorMessage(message.errorMessage);
                 }
+                if (message.isUpdated(MASK_AUTO_REFRESH)) {
+                    NBTExtractorGui.updateAutoRefresh(message.autoRefresh);
+                }
             });
             return null;
         }
@@ -51,6 +54,7 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
     private static final byte MASK_EXTRACTION_PATH = maskMaker.nextMask();
     private static final byte MASK_OUTPUT_MODE = maskMaker.nextMask();
     private static final byte MASK_ERROR_MESSAGE = maskMaker.nextMask();
+    private static final byte MASK_AUTO_REFRESH = maskMaker.nextMask();
 
     private byte updated = 0;
     private ErrorCode errorCode;
@@ -58,6 +62,7 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
     private NBTPath path;
     private NBTExtractorOutputMode outputMode;
     private UnlocalizedString errorMessage;
+    private boolean autoRefresh;
 
     public NBTExtractorUpdateClientMessage() {}
 
@@ -84,6 +89,11 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
     public void updateErrorMessage(UnlocalizedString errorMessage) {
         this.errorMessage = errorMessage;
         this.updated |= MASK_ERROR_MESSAGE;
+    }
+
+    public void updateAutoRefresh(boolean autoRefresh) {
+        this.autoRefresh = autoRefresh;
+        this.updated |= MASK_AUTO_REFRESH;
     }
 
     public boolean isEmpty() {
@@ -113,6 +123,9 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
                 this.errorMessage.fromNBT(Objects.requireNonNull(ByteBufUtils.readTag(buf)));
             }
         }
+        if (this.isUpdated(MASK_AUTO_REFRESH)) {
+            this.autoRefresh = buf.readBoolean();
+        }
     }
 
     private boolean isUpdated(byte mask) {
@@ -141,6 +154,9 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
                 buf.writeBoolean(false);
                 ByteBufUtils.writeTag(buf, this.errorMessage.toNBT());
             }
+        }
+        if (this.isUpdated(MASK_AUTO_REFRESH)) {
+            buf.writeBoolean(this.autoRefresh);
         }
     }
 

@@ -4,6 +4,8 @@ import me.tepis.integratednbt.network.clientbound.NBTExtractorUpdateClientMessag
 import me.tepis.integratednbt.network.clientbound.NBTExtractorUpdateClientMessage.NBTExtractorUpdateClientMessageHandler;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorRemoteRequestMessage;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorRemoteRequestMessage.NBTExtractorRemoteRequestMessageHandler;
+import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateAutoRefreshMessage;
+import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateAutoRefreshMessage.NBTExtractorUpdateAutoRefreshMessageHandler;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateExtractionPathMessage;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateExtractionPathMessage.NBTExtractorUpdateExtractionPathMessageHandler;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateOutputModeMessage;
@@ -82,6 +84,12 @@ public class IntegratedNBT {
         networkChannel.registerMessage(
             NBTExtractorUpdateOutputModeMessageHandler.class,
             NBTExtractorUpdateOutputModeMessage.class,
+            ++discriminator,
+            Side.SERVER
+        );
+        networkChannel.registerMessage(
+            NBTExtractorUpdateAutoRefreshMessageHandler.class,
+            NBTExtractorUpdateAutoRefreshMessage.class,
             ++discriminator,
             Side.SERVER
         );
