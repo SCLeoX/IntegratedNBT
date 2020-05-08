@@ -7,7 +7,7 @@ Screenshots:
 
 ![](./screenshots/2.png)
 
-Support for different output mode:
+Support for different output modes:
 
 ![](./screenshots/3.png)
 
