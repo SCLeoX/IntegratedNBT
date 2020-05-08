@@ -338,6 +338,15 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         );
     }
 
+    public UnlocalizedString getFirstErrorMessage() {
+        List<UnlocalizedString> errors = this.evaluator.getErrors();
+        if (errors.isEmpty()) {
+            return null;
+        } else {
+            return errors.get(0);
+        }
+    }
+
     @Override
     public boolean hasCapability(@Nonnull Capability<?> capability, EnumFacing facing) {
         return (

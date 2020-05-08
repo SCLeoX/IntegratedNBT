@@ -11,6 +11,9 @@ import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import org.cyclops.cyclopscore.helper.L10NHelpers.UnlocalizedString;
+
+import java.util.Objects;
 
 /**
  * From server to client;
@@ -22,17 +25,20 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
         @Override
         public IMessage onMessage(NBTExtractorUpdateClientMessage message, MessageContext ctx) {
             Minecraft.getMinecraft().addScheduledTask(() -> {
-                if (message.nbt != null) {
+                if (message.isUpdated(MASK_NBT)) {
                     NBTExtractorGui.updateNBT(message.nbt);
                 }
-                if (message.errorCode != null) {
+                if (message.isUpdated(MASK_ERROR_CODE)) {
                     NBTExtractorGui.updateError(message.errorCode);
                 }
-                if (message.path != null) {
+                if (message.isUpdated(MASK_EXTRACTION_PATH)) {
                     NBTExtractorGui.updateExtractionPath(message.path);
                 }
-                if (message.outputMode != null) {
+                if (message.isUpdated(MASK_OUTPUT_MODE)) {
                     NBTExtractorGui.updateOutputMode(message.outputMode);
+                }
+                if (message.isUpdated(MASK_ERROR_MESSAGE)) {
+                    NBTExtractorGui.updateErrorMessage(message.errorMessage);
                 }
             });
             return null;
@@ -44,12 +50,16 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
     private static final byte MASK_ERROR_CODE = maskMaker.nextMask();
     private static final byte MASK_EXTRACTION_PATH = maskMaker.nextMask();
     private static final byte MASK_OUTPUT_MODE = maskMaker.nextMask();
+    private static final byte MASK_ERROR_MESSAGE = maskMaker.nextMask();
 
     private byte updated = 0;
     private ErrorCode errorCode;
     private NBTTagCompound nbt;
     private NBTPath path;
     private NBTExtractorOutputMode outputMode;
+    private UnlocalizedString errorMessage;
+
+    public NBTExtractorUpdateClientMessage() {}
 
     public void updateNBT(NBTTagCompound nbt) {
         this.nbt = nbt;
@@ -71,43 +81,66 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
         this.updated |= MASK_OUTPUT_MODE;
     }
 
+    public void updateErrorMessage(UnlocalizedString errorMessage) {
+        this.errorMessage = errorMessage;
+        this.updated |= MASK_ERROR_MESSAGE;
+    }
+
     public boolean isEmpty() {
         return this.updated == 0;
     }
 
-    public NBTExtractorUpdateClientMessage() {}
-
     @Override
     public void fromBytes(ByteBuf buf) {
         this.updated = buf.readByte();
-        if ((this.updated & MASK_NBT) > 0) {
+        if (this.isUpdated(MASK_NBT)) {
             this.nbt = ByteBufUtils.readTag(buf);
         }
-        if ((this.updated & MASK_ERROR_CODE) > 0) {
+        if (this.isUpdated(MASK_ERROR_CODE)) {
             this.errorCode = ErrorCode.values()[buf.readByte()];
         }
-        if ((this.updated & MASK_EXTRACTION_PATH) > 0) {
+        if (this.isUpdated(MASK_EXTRACTION_PATH)) {
             this.path = NBTPath.fromNBT(ByteBufUtils.readTag(buf)).orElse(new NBTPath());
         }
-        if ((this.updated & MASK_OUTPUT_MODE) > 0) {
+        if (this.isUpdated(MASK_OUTPUT_MODE)) {
             this.outputMode = NBTExtractorOutputMode.values()[buf.readByte()];
         }
+        if (this.isUpdated(MASK_ERROR_MESSAGE)) {
+            if (buf.readBoolean()) { // Is null
+                this.errorMessage = null;
+            } else {
+                this.errorMessage = new UnlocalizedString();
+                this.errorMessage.fromNBT(Objects.requireNonNull(ByteBufUtils.readTag(buf)));
+            }
+        }
+    }
+
+    private boolean isUpdated(byte mask) {
+        return (this.updated & mask) > 0;
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
         buf.writeByte(this.updated);
-        if ((this.updated & MASK_NBT) > 0) {
+        if (this.isUpdated(MASK_NBT)) {
             ByteBufUtils.writeTag(buf, this.nbt);
         }
-        if ((this.updated & MASK_ERROR_CODE) > 0) {
+        if (this.isUpdated(MASK_ERROR_CODE)) {
             buf.writeByte(this.errorCode.ordinal());
         }
-        if ((this.updated & MASK_EXTRACTION_PATH) > 0) {
+        if (this.isUpdated(MASK_EXTRACTION_PATH)) {
             ByteBufUtils.writeTag(buf, this.path.toNBTCompound());
         }
-        if ((this.updated & MASK_OUTPUT_MODE) > 0) {
+        if (this.isUpdated(MASK_OUTPUT_MODE)) {
             buf.writeByte(this.outputMode.ordinal());
+        }
+        if (this.isUpdated(MASK_ERROR_MESSAGE)) {
+            if (this.errorMessage == null) { // Is null
+                buf.writeBoolean(true);
+            } else {
+                buf.writeBoolean(false);
+                ByteBufUtils.writeTag(buf, this.errorMessage.toNBT());
+            }
         }
     }
 

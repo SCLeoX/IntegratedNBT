@@ -12,6 +12,7 @@ import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import org.cyclops.cyclopscore.helper.L10NHelpers.UnlocalizedString;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -127,10 +128,12 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
 
     // These are static because GUI sometimes after receiving the update packets.
     private static NBTExtractorGui lastInstance = null;
+    // Null signify that the first update packet has not arrived yet.
     private static ErrorCode errorCode = null;
     private static NBTTagCompound nbt;
     private static NBTPath extractionPath = null;
     private static NBTExtractorOutputMode outputMode = null;
+    private static UnlocalizedString errorMessage = null;
 
     private NBTTreeViewer treeViewer;
     private NBTExtractorContainer nbtExtractorContainer;
@@ -246,6 +249,10 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
         this.outputModeButton.setHoverText(messages);
     }
 
+    public static void updateErrorMessage(UnlocalizedString errorMessage) {
+        NBTExtractorGui.errorMessage = errorMessage;
+    }
+
     @Override
     public void onGuiClosed() {
         lastInstance = null;
@@ -253,6 +260,7 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
         nbt = null;
         extractionPath = null;
         outputMode = null;
+        errorMessage = null;
         super.onGuiClosed();
     }
 
@@ -433,22 +441,26 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
     }
 
     private void renderError() {
-        String errorMessage = "";
-        switch (errorCode) {
-            case EVAL_ERROR:
-                errorMessage = I18n.format("integratednbt:nbt_extractor.error.eval");
-                break;
-            case TYPE_ERROR:
-                errorMessage = I18n.format("integratednbt:nbt_extractor.error.type");
-                break;
-            case UNEXPECTED_ERROR:
-                errorMessage = I18n.format("integratednbt:nbt_extractor.error.unexpected");
-                break;
+        String message = "";
+        if (errorMessage != null) {
+            message = errorMessage.localize();
+        } else {
+            switch (errorCode) {
+                case EVAL_ERROR:
+                    message = I18n.format("integratednbt:nbt_extractor.error.eval");
+                    break;
+                case TYPE_ERROR:
+                    message = I18n.format("integratednbt:nbt_extractor.error.type");
+                    break;
+                case UNEXPECTED_ERROR:
+                    message = I18n.format("integratednbt:nbt_extractor.error.unexpected");
+                    break;
+            }
         }
         this.renderCenteredTextGroup(
             I18n.format("integratednbt:nbt_extractor.error"),
             0xFF5555,
-            errorMessage
+            message
         );
     }
 

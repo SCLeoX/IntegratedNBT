@@ -13,7 +13,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 /**
  * From client to server;
- * Sets the extraction path
+ * Updates information on server
  */
 public abstract class NBTExtractorUpdateServerMessageBase implements IMessage {
     public static abstract class NBTExtractorUpdateServerMessageHandlerBase<

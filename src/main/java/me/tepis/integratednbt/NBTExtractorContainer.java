@@ -10,6 +10,7 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import org.cyclops.cyclopscore.helper.L10NHelpers.UnlocalizedString;
 import org.cyclops.integrateddynamics.api.PartStateException;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
@@ -78,6 +79,8 @@ public class NBTExtractorContainer extends Container {
     private NBTTagCompound clientNBT = null;
     private NBTPath clientPath = null;
     private NBTExtractorOutputMode clientOutputMode = null;
+    private UnlocalizedString clientErrorMessage = null;
+
     public NBTExtractorContainer(
         InventoryPlayer playerInventory,
         NBTExtractorTileEntity nbtExtractorEntity
@@ -111,6 +114,7 @@ public class NBTExtractorContainer extends Container {
         if (!this.nbtExtractorEntity.getWorld().isRemote) {
             ErrorCode errorCode;
             NBTTagCompound nbt = this.clientNBT;
+            UnlocalizedString errorMessage = null;
             if (!this.getSlot(SRC_NBT).getHasStack()) {
                 // Client will do this automatically
                 errorCode = this.clientErrorCode = null;
@@ -119,6 +123,7 @@ public class NBTExtractorContainer extends Container {
                     IVariable<?> variable = this.nbtExtractorEntity.getSrcNBTVariable();
                     if (variable == null) {
                         errorCode = ErrorCode.EVAL_ERROR;
+                        errorMessage = this.nbtExtractorEntity.getFirstErrorMessage();
                     } else {
                         IValue value = variable.getValue();
                         if (value instanceof ValueNbt) {
@@ -131,6 +136,7 @@ public class NBTExtractorContainer extends Container {
                 } catch (EvaluationException | PartStateException exception) {
                     exception.printStackTrace();
                     errorCode = ErrorCode.EVAL_ERROR;
+                    errorMessage = new UnlocalizedString(exception.getMessage());
                 } catch (Exception exception) {
                     errorCode = ErrorCode.UNEXPECTED_ERROR;
                     IntegratedNBT.getLogger().error(
@@ -157,6 +163,10 @@ public class NBTExtractorContainer extends Container {
             if (this.clientOutputMode != outputMode) {
                 message.updateOutputMode(outputMode);
                 this.clientOutputMode = outputMode;
+            }
+            if (!Objects.equals(errorMessage, this.clientErrorMessage)) {
+                message.updateErrorMessage(errorMessage);
+                this.clientErrorMessage = errorMessage;
             }
             if (!message.isEmpty()) {
                 EntityPlayerMP playerMP = (EntityPlayerMP) this.playerInventory.player;
