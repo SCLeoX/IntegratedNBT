@@ -1,0 +1,28 @@
+modLoader="javafml"
+loaderVersion="[31.1,)"
+[[mods]]
+modId="integratednbt"
+version="${version}"
+displayName="Integrated NBT"
+authors="Rin Tepis"
+description='''
+Integrated NBT is an addon for Integrated Dynamics. It offers a simpler way of extracting deeply nested NBT values.
+'''
+[[dependencies.integratednbt]]
+    modId="integrateddynamics"
+    mandatory=true
+    versionRange="1.1.1"
+    ordering="AFTER"
+    side="BOTH"
+[[dependencies.integratednbt]]
+    modId="forge"
+    mandatory=true
+    versionRange="[31.1,)"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.integratednbt]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.15.2]"
+    ordering="NONE"
+    side="BOTH"

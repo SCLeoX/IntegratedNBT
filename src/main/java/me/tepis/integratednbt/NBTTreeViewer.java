@@ -3,33 +3,33 @@ package me.tepis.integratednbt;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.resources.I18n;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagByte;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagDouble;
-import net.minecraft.nbt.NBTTagFloat;
-import net.minecraft.nbt.NBTTagInt;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.nbt.NBTTagLong;
-import net.minecraft.nbt.NBTTagShort;
-import net.minecraft.nbt.NBTTagString;
-import net.minecraftforge.fml.client.config.GuiUtils;
+import net.minecraft.nbt.ByteNBT;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.DoubleNBT;
+import net.minecraft.nbt.FloatNBT;
+import net.minecraft.nbt.INBT;
+import net.minecraft.nbt.IntNBT;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.LongNBT;
+import net.minecraft.nbt.NBTTypes;
+import net.minecraft.nbt.ShortNBT;
+import net.minecraftforge.fml.client.gui.GuiUtils;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValueType;
-import org.lwjgl.input.Mouse;
+
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Set;
 
-import static me.tepis.integratednbt.NBTExtractorGui.GUI_TEXTURE;
-import static me.tepis.integratednbt.NBTExtractorGui.SCREEN_EDGE;
+import static me.tepis.integratednbt.NBTExtractorScreen.GUI_TEXTURE;
+import static me.tepis.integratednbt.NBTExtractorScreen.SCREEN_EDGE;
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
 import static org.lwjgl.opengl.GL11.glTranslated;
 
 public abstract class NBTTreeViewer {
     private static final long SMOOTH_SCROLLING_TRANSITION_TIME_MS = 75;
-    private static final double SCROLL_SPEED = 1d / 4;
+    private static final double SCROLL_SPEED = 30;
     private static final int LINE_SPACE = 1;
     private static final int EXPAND_BUTTON_RIGHT_MARGIN = 3;
     private static final int INDENTATION = 10;
@@ -77,8 +77,8 @@ public abstract class NBTTreeViewer {
 
     private final Set<NBTPath> expandedPaths;
     private final Wrapper<Integer> scrollTop;
-    private final FontRenderer fontRenderer = Minecraft.getMinecraft().fontRenderer;
-    private ExtendedGuiContainer gui;
+    private final FontRenderer fontRenderer = Minecraft.getInstance().fontRenderer;
+    private ExtendedContainerScreen<?> gui;
     private int left;
     private int top;
     private int width;
@@ -91,7 +91,7 @@ public abstract class NBTTreeViewer {
     private int currentX;
     private NBTPath currentPath;
     private NBTPath hoveringPath;
-    private NBTBase hoveringNBTNode;
+    private INBT hoveringNBTNode;
     private NBTPath selecting;
     /**
      * X coordinate of mouse in the screen
@@ -104,7 +104,7 @@ public abstract class NBTTreeViewer {
     private NBTPath hoveringExpandableButton;
 
     public NBTTreeViewer(
-        ExtendedGuiContainer gui,
+        ExtendedContainerScreen<?> gui,
         Set<NBTPath> expandedPaths,
         Wrapper<Integer> scrollTop
     ) {
@@ -121,8 +121,7 @@ public abstract class NBTTreeViewer {
         this.height = height;
     }
 
-    public void handleMouseInput() {
-        int dWheel = Mouse.getDWheel();
+    public void mouseScrolled(double dWheel) {
         int newValue = (int) (this.scrollTop.get() - dWheel * SCROLL_SPEED);
         if (newValue < 0) {
             newValue = 0;
@@ -208,7 +207,7 @@ public abstract class NBTTreeViewer {
         this.currentX += EXPAND_BUTTON_SIZE + EXPAND_BUTTON_RIGHT_MARGIN;
     }
 
-    public void render(NBTTagCompound nbt, int absMouseX, int absMouseY) {
+    public void render(INBT nbt, int absMouseX, int absMouseY) {
         if (nbt == null) {
             return;
         }
@@ -257,7 +256,8 @@ public abstract class NBTTreeViewer {
                 list.add(this.hoveringPath.getDisplayText());
                 list.add(I18n.format(
                     "integratednbt:nbt_extractor.tooltip.nbt_type",
-                    NBTBase.getTypeName(this.hoveringNBTNode.getId())
+                    // Get NBT tag type from tag type id
+                    NBTTypes.func_229710_a_(this.hoveringNBTNode.getId()).func_225650_b_()
                 ));
                 list.add(I18n.format(
                     "integratednbt:nbt_extractor.tooltip.converted_type",
@@ -335,9 +335,9 @@ public abstract class NBTTreeViewer {
         }
     }
 
-    public abstract void onUpdateSelectedPath(NBTPath newPath, NBTBase nbt);
+    public abstract void onUpdateSelectedPath(NBTPath newPath, INBT nbt);
 
-    private static boolean isNodeExpandable(NBTBase nbt) {
+    private static boolean isNodeExpandable(INBT nbt) {
         int nbtId = nbt.getId();
         return nbtId == 9 || nbtId == 10;
     }
@@ -354,12 +354,12 @@ public abstract class NBTTreeViewer {
         this.currentY += this.fontRenderer.FONT_HEIGHT + LINE_SPACE;
     }
 
-    private void renderNode(String label, NBTBase node) {
+    private void renderNode(String label, INBT node) {
         this.currentX = this.currentPath.getDepth() * INDENTATION + SCREEN_EDGE;
         boolean isExpandedIfExpandable = false;
         if (isNodeExpandable(node)) {
             isExpandedIfExpandable = this.expandedPaths.contains(this.currentPath);
-        } else {
+        } else if (this.currentPath.getDepth() != 0) {
             this.currentX += EXPAND_BUTTON_RIGHT_MARGIN + EXPAND_BUTTON_SIZE;
         }
 
@@ -370,42 +370,42 @@ public abstract class NBTTreeViewer {
             case 1: // Byte
                 isHoveringText = this.renderKVPair(
                     label,
-                    String.valueOf(((NBTTagByte) node).getByte()),
+                    String.valueOf(((ByteNBT) node).getByte()),
                     NUMBER_COLOR
                 );
                 break;
             case 2: // Short
                 isHoveringText = this.renderKVPair(
                     label,
-                    String.valueOf(((NBTTagShort) node).getShort()),
+                    String.valueOf(((ShortNBT) node).getShort()),
                     NUMBER_COLOR
                 );
                 break;
             case 3: // Int
                 isHoveringText = this.renderKVPair(
                     label,
-                    String.valueOf(((NBTTagInt) node).getInt()),
+                    String.valueOf(((IntNBT) node).getInt()),
                     NUMBER_COLOR
                 );
                 break;
             case 4: // Long
                 isHoveringText = this.renderKVPair(
                     label,
-                    String.valueOf(((NBTTagLong) node).getLong()),
+                    String.valueOf(((LongNBT) node).getLong()),
                     NUMBER_COLOR
                 );
                 break;
             case 5: // Float
                 isHoveringText = this.renderKVPair(
                     label,
-                    String.valueOf(((NBTTagFloat) node).getFloat()),
+                    String.valueOf(((FloatNBT) node).getFloat()),
                     NUMBER_COLOR
                 );
                 break;
             case 6: // Double
                 isHoveringText = this.renderKVPair(
                     label,
-                    String.valueOf(((NBTTagDouble) node).getDouble()),
+                    String.valueOf(((DoubleNBT) node).getDouble()),
                     NUMBER_COLOR
                 );
                 break;
@@ -423,7 +423,7 @@ public abstract class NBTTreeViewer {
                     label,
                     // Yes, I understand technically we should escape double quotes in the string.
                     // However, I think that will just make it confusing.
-                    '"' + ((NBTTagString) node).getString() + '"',
+                    '"' + node.getString() + '"',
                     STRING_COLOR
                 );
                 break;
@@ -449,12 +449,12 @@ public abstract class NBTTreeViewer {
             // Recursive calls
             switch (node.getId()) {
                 case 9: { // List
-                    if (((NBTTagList) node).tagCount() == 0) {
+                    if (((ListNBT) node).size() == 0) {
                         this.renderEmpty();
                         break;
                     }
                     int i = 0;
-                    for (NBTBase item : (NBTTagList) node) {
+                    for (INBT item : (ListNBT) node) {
                         this.currentPath.pushIndex(i);
                         this.renderNode("#" + i, item);
                         this.currentPath.pop();
@@ -463,14 +463,14 @@ public abstract class NBTTreeViewer {
                     break;
                 }
                 case 10: { // Compound
-                    if (((NBTTagCompound) node).getSize() == 0) {
+                    if (((CompoundNBT) node).size() == 0) {
                         this.renderEmpty();
                         break;
                     }
-                    NBTTagCompound compound = (NBTTagCompound) node;
-                    for (String key : compound.getKeySet()) {
+                    CompoundNBT compound = (CompoundNBT) node;
+                    for (String key : compound.keySet()) {
                         this.currentPath.pushKey(key);
-                        this.renderNode(key, compound.getTag(key));
+                        this.renderNode(key, compound.get(key));
                         this.currentPath.pop();
                     }
                     break;

@@ -1,29 +1,30 @@
 package me.tepis.integratednbt;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraftforge.fml.client.config.GuiUtils;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.button.Button;
+import net.minecraftforge.fml.client.gui.GuiUtils;
 
 import java.util.List;
 
 public class HoverTextImageButton extends ImageButton {
-    private GuiScreen gui;
+    private Screen gui;
     private List<String> hoverText;
 
     public HoverTextImageButton(
-        GuiScreen gui,
-        int buttonId,
+        Screen gui,
         TexturePart textureNormal,
         TexturePart textureHover,
         int x,
-        int y
+        int y,
+        Button.IPressable onPress
     ) {
-        super(buttonId, textureNormal, textureHover, x, y);
+        super(textureNormal, textureHover, x, y, onPress);
         this.gui = gui;
     }
 
-    public HoverTextImageButton(GuiScreen gui, int buttonId, int x, int y) {
-        super(buttonId, x, y);
+    public HoverTextImageButton(Screen gui, int x, int y, Button.IPressable onPress) {
+        super(x, y, onPress);
         this.gui = gui;
     }
 
@@ -35,7 +36,7 @@ public class HoverTextImageButton extends ImageButton {
      * Draw hover text if is hovered
      */
     public void drawHover(int mouseX, int mouseY) {
-        if (this.hovered) {
+        if (this.isHovered) {
             GuiUtils.drawHoveringText(
                 this.hoverText,
                 mouseX,
@@ -43,7 +44,7 @@ public class HoverTextImageButton extends ImageButton {
                 this.gui.width,
                 this.gui.height,
                 200,
-                Minecraft.getMinecraft().fontRenderer
+                Minecraft.getInstance().fontRenderer
             );
         }
     }

@@ -1,13 +1,13 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.util.ResourceLocation;
 import org.cyclops.integrateddynamics.api.item.IVariableFacadeHandler;
 
 import java.util.Optional;
 
 public class NBTExtractedVariableFacadeHandler
     implements IVariableFacadeHandler<NBTExtractedVariableFacade> {
-    private static final String VARIABLE_TYPE_ID = "integratednbt:nbt_extracted";
     private static final String KEY_SOURCE_NBT_ID = "sourceNBTId";
     private static final String KEY_EXTRACTION_PATH = "extractionPath";
     private static final String KEY_DEFAULT_NBT_ID = "defaultNBTId";
@@ -21,14 +21,14 @@ public class NBTExtractedVariableFacadeHandler
     }
 
     @Override
-    public String getTypeId() {
-        return VARIABLE_TYPE_ID;
+    public ResourceLocation getUniqueName() {
+        return new ResourceLocation(IntegratedNBT.MODID, "nbt_extracted");
     }
 
     @Override
-    public NBTExtractedVariableFacade getVariableFacade(int id, NBTTagCompound tag) {
-        int sourceNBTId = tag.getInteger(KEY_SOURCE_NBT_ID);
-        Optional<NBTPath> extractionPath = NBTPath.fromNBT(tag.getTag(KEY_EXTRACTION_PATH));
+    public NBTExtractedVariableFacade getVariableFacade(int id, CompoundNBT tag) {
+        int sourceNBTId = tag.getInt(KEY_SOURCE_NBT_ID);
+        Optional<NBTPath> extractionPath = NBTPath.fromNBT(tag.get(KEY_EXTRACTION_PATH));
         byte defaultNBTId = tag.getByte(KEY_DEFAULT_NBT_ID);
         return new NBTExtractedVariableFacade(
             id,
@@ -39,9 +39,9 @@ public class NBTExtractedVariableFacadeHandler
     }
 
     @Override
-    public void setVariableFacade(NBTTagCompound tag, NBTExtractedVariableFacade facade) {
-        tag.setInteger(KEY_SOURCE_NBT_ID, facade.getSourceNBTId());
-        tag.setTag(KEY_EXTRACTION_PATH, facade.getExtractionPath().toNBT());
-        tag.setByte(KEY_DEFAULT_NBT_ID, facade.getDefaultNBTId());
+    public void setVariableFacade(CompoundNBT tag, NBTExtractedVariableFacade facade) {
+        tag.putInt(KEY_SOURCE_NBT_ID, facade.getSourceNBTId());
+        tag.put(KEY_EXTRACTION_PATH, facade.getExtractionPath().toNBT());
+        tag.putByte(KEY_DEFAULT_NBT_ID, facade.getDefaultNBTId());
     }
 }

@@ -1,16 +1,22 @@
 package me.tepis.integratednbt;
 
+import me.tepis.integratednbt.network.PacketHandler;
 import me.tepis.integratednbt.network.clientbound.NBTExtractorUpdateClientMessage;
 import me.tepis.integratednbt.network.clientbound.NBTExtractorUpdateClientMessage.ErrorCode;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.inventory.Container;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.Slot;
+import net.minecraft.inventory.container.Container;
+import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import org.cyclops.cyclopscore.helper.L10NHelpers.UnlocalizedString;
+import net.minecraft.nbt.INBT;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.world.World;
+import net.minecraftforge.fml.network.PacketDistributor;
 import org.cyclops.integrateddynamics.api.PartStateException;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
@@ -18,6 +24,7 @@ import org.cyclops.integrateddynamics.api.evaluate.variable.IVariable;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeNbt.ValueNbt;
 
 import javax.annotation.Nonnull;
+import java.lang.reflect.Field;
 import java.util.Objects;
 
 
@@ -73,26 +80,38 @@ public class NBTExtractorContainer extends Container {
     private static final int VAR_OUT = 1;
     private static final int INVENTORY_START = 2;
     private static final int INVENTORY_END = 38; // Exclusive
-    private InventoryPlayer playerInventory;
+    private PlayerInventory playerInventory;
     private NBTExtractorTileEntity nbtExtractorEntity;
     private ErrorCode clientErrorCode = null;
-    private NBTTagCompound clientNBT = null;
+    private INBT clientNBT = null;
     private NBTPath clientPath = null;
     private NBTExtractorOutputMode clientOutputMode = null;
-    private UnlocalizedString clientErrorMessage = null;
+    private ITextComponent clientErrorMessage = null;
     private Boolean clientAutoRefresh = null;
 
+    // Logic-client
     public NBTExtractorContainer(
-        InventoryPlayer playerInventory,
+        int windowId,
+        PlayerInventory playerInventory,
+        PacketBuffer data
+    ) {
+        this(windowId, playerInventory, getTileEntity(playerInventory, data));
+    }
+
+    // Logic-server
+    public NBTExtractorContainer(
+        int windowId,
+        PlayerInventory playerInventory,
         NBTExtractorTileEntity nbtExtractorEntity
     ) {
+        super(Additions.NBT_EXTRACTOR_CONTAINER.get(), windowId);
         this.playerInventory = playerInventory;
         this.nbtExtractorEntity = nbtExtractorEntity;
-        this.addSlotToContainer(new SrcNBTSlot(nbtExtractorEntity, SRC_NBT, 9, 6));
-        this.addSlotToContainer(new VarOutSlot(nbtExtractorEntity, VAR_OUT, 153, 6));
+        this.addSlot(new SrcNBTSlot(nbtExtractorEntity, SRC_NBT, 9, 6));
+        this.addSlot(new VarOutSlot(nbtExtractorEntity, VAR_OUT, 153, 6));
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 9; ++j) {
-                this.addSlotToContainer(new ResponsiveSlot(
+                this.addSlot(new ResponsiveSlot(
                     playerInventory,
                     j + i * 9 + 9,
                     9 + j * 18,
@@ -101,8 +120,21 @@ public class NBTExtractorContainer extends Container {
             }
         }
         for (int i = 0; i < 9; i++) {
-            this.addSlotToContainer(new ResponsiveSlot(playerInventory, i, 9 + i * 18, 86));
+            this.addSlot(new ResponsiveSlot(playerInventory, i, 9 + i * 18, 86));
         }
+    }
+
+    private static NBTExtractorTileEntity getTileEntity(
+        PlayerInventory playerInventory,
+        PacketBuffer data
+    ) {
+        Objects.requireNonNull(playerInventory);
+        Objects.requireNonNull(data);
+        TileEntity tileAtPos = playerInventory.player.world.getTileEntity(data.readBlockPos());
+        if (tileAtPos instanceof NBTExtractorTileEntity) {
+            return (NBTExtractorTileEntity) tileAtPos;
+        }
+        throw new IllegalStateException("Tile entity is not correct: " + tileAtPos);
     }
 
     public NBTExtractorTileEntity getNbtExtractorEntity() {
@@ -112,16 +144,17 @@ public class NBTExtractorContainer extends Container {
     @Override
     public void detectAndSendChanges() {
         super.detectAndSendChanges();
-        if (!this.nbtExtractorEntity.getWorld().isRemote) {
+        World world = this.nbtExtractorEntity.getWorld();
+        if (world != null && !world.isRemote) {
             ErrorCode errorCode;
-            NBTTagCompound nbt = this.clientNBT;
-            UnlocalizedString errorMessage = null;
+            INBT nbt = this.clientNBT;
+            ITextComponent errorMessage = null;
             if (!this.getSlot(SRC_NBT).getHasStack()) {
                 // Client will do this automatically
                 errorCode = this.clientErrorCode = null;
             } else {
                 try {
-                    NBTTagCompound frozenValue = this.nbtExtractorEntity.getFrozenValue();
+                    INBT frozenValue = this.nbtExtractorEntity.getFrozenValue();
                     if (frozenValue == null) {
                         // If there is no frozen value (either frozen mode is not on, or it is
                         // on, but a value has not been evaluated yet.)
@@ -132,7 +165,7 @@ public class NBTExtractorContainer extends Container {
                         } else {
                             IValue value = variable.getValue();
                             if (value instanceof ValueNbt) {
-                                nbt = ((ValueNbt) value).getRawValue();
+                                nbt = ((ValueNbt) value).getRawValue().orElse(null);
                                 errorCode = ErrorCode.NO_ERROR;
                             } else {
                                 errorCode = ErrorCode.TYPE_ERROR;
@@ -145,10 +178,10 @@ public class NBTExtractorContainer extends Container {
                 } catch (EvaluationException | PartStateException exception) {
                     exception.printStackTrace();
                     errorCode = ErrorCode.EVAL_ERROR;
-                    errorMessage = new UnlocalizedString(exception.getMessage());
+                    errorMessage = new StringTextComponent(exception.getMessage());
                 } catch (Exception exception) {
                     errorCode = ErrorCode.UNEXPECTED_ERROR;
-                    IntegratedNBT.getLogger().error(
+                    IntegratedNBT.LOGGER.error(
                         "Unexpected error occurred while evaluating variable.",
                         exception
                     );
@@ -183,8 +216,8 @@ public class NBTExtractorContainer extends Container {
                 this.clientAutoRefresh = this.nbtExtractorEntity.isAutoRefresh();
             }
             if (!message.isEmpty()) {
-                EntityPlayerMP playerMP = (EntityPlayerMP) this.playerInventory.player;
-                IntegratedNBT.getNetworkChannel().sendTo(message, playerMP);
+                ServerPlayerEntity playerMP = (ServerPlayerEntity) this.playerInventory.player;
+                PacketHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> playerMP), message);
             }
             if (errorCode == ErrorCode.NO_ERROR) {
                 this.nbtExtractorEntity.updateLastEvaluatedNBT(nbt);
@@ -201,7 +234,7 @@ public class NBTExtractorContainer extends Container {
     }
 
     @Override
-    public boolean canInteractWith(@Nonnull EntityPlayer playerIn) {
+    public boolean canInteractWith(@Nonnull PlayerEntity playerIn) {
         return true;
     }
 
@@ -216,7 +249,7 @@ public class NBTExtractorContainer extends Container {
     }
 
     @Nonnull
-    public ItemStack transferStackInSlot(EntityPlayer playerIn, int index) {
+    public ItemStack transferStackInSlot(PlayerEntity playerIn, int index) {
         ItemStack leftOver = ItemStack.EMPTY;
         Slot slot = this.inventorySlots.get(index);
         if (slot != null && slot.getHasStack()) {
@@ -235,12 +268,12 @@ public class NBTExtractorContainer extends Container {
                             return ItemStack.EMPTY;
                         } else {
                             Slot varOutSlot = this.getSlot(VAR_OUT);
-                            varOutSlot.putStack(fromSlot.splitStack(1));
+                            varOutSlot.putStack(fromSlot.split(1));
                             varOutSlot.onSlotChanged();
                         }
                     } else {
                         Slot srcNBTSlot = this.getSlot(SRC_NBT);
-                        srcNBTSlot.putStack(fromSlot.splitStack(1));
+                        srcNBTSlot.putStack(fromSlot.split(1));
                         srcNBTSlot.onSlotChanged();
                     }
                 } else {

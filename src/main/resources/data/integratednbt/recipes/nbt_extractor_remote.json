@@ -14,12 +14,15 @@
     "r": {
       "item": "minecraft:redstone"
     },
-    "l": [{
-      "item": "integrateddynamics:logic_programmer",
-      "data": 0
-    }, {
-      "item": "integrateddynamics:portable_logic_programmer"
-    }]
+    "l": [
+      {
+        "item": "integrateddynamics:logic_programmer",
+        "data": 0
+      },
+      {
+        "item": "integrateddynamics:portable_logic_programmer"
+      }
+    ]
   },
   "result": {
     "item": "integratednbt:nbt_extractor_remote",

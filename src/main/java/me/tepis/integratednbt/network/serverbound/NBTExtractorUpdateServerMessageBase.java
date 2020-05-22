@@ -1,29 +1,32 @@
 package me.tepis.integratednbt.network.serverbound;
 
-import io.netty.buffer.ByteBuf;
 import me.tepis.integratednbt.NBTExtractorTileEntity;
-import net.minecraft.entity.player.EntityPlayerMP;
+import me.tepis.integratednbt.network.Message;
+import me.tepis.integratednbt.network.MessageHandler;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraftforge.fml.network.NetworkEvent.Context;
+
+import java.util.function.Supplier;
 
 /**
  * From client to server;
  * Updates information on server
  */
-public abstract class NBTExtractorUpdateServerMessageBase implements IMessage {
+public abstract class NBTExtractorUpdateServerMessageBase implements Message {
     public static abstract class NBTExtractorUpdateServerMessageHandlerBase<
         T extends NBTExtractorUpdateServerMessageBase>
-        implements IMessageHandler<T, IMessage> {
+        extends MessageHandler<T> {
 
         @Override
-        public final IMessage onMessage(T message, MessageContext ctx) {
-            ((WorldServer) ctx.getServerHandler().player.world).addScheduledTask(() -> {
-                EntityPlayerMP player = ctx.getServerHandler().player;
+        @SuppressWarnings("deprecation")
+        public final void onMessage(T message, Context ctx) {
+            ctx.enqueueWork(() -> {
+                ServerPlayerEntity player = ctx.getSender();
+                assert player != null;
                 World world = player.world;
                 if (!world.isBlockLoaded(message.blockPos)) {
                     return;
@@ -41,7 +44,6 @@ public abstract class NBTExtractorUpdateServerMessageBase implements IMessage {
                 }
                 this.updateTileEntity(message, nbtExtractorTileEntity);
             });
-            return null;
         }
 
         public abstract void updateTileEntity(
@@ -59,12 +61,12 @@ public abstract class NBTExtractorUpdateServerMessageBase implements IMessage {
     public NBTExtractorUpdateServerMessageBase() {}
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    public void fromBytes(PacketBuffer buf) {
         this.blockPos = BlockPos.fromLong(buf.readLong());
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    public void toBytes(PacketBuffer buf) {
         buf.writeLong(this.blockPos.toLong());
     }
 }

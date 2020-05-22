@@ -2,10 +2,10 @@ package me.tepis.integratednbt;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
-@SideOnly(Side.CLIENT)
+@OnlyIn(Dist.CLIENT)
 public class Texture {
     private ResourceLocation resourceLocation;
 
@@ -18,7 +18,7 @@ public class Texture {
     }
 
     public void bind() {
-        Minecraft.getMinecraft().getTextureManager().bindTexture(this.resourceLocation);
+        Minecraft.getInstance().getTextureManager().bindTexture(this.resourceLocation);
     }
 
     public TexturePart createPart(int x, int y, int width, int height) {

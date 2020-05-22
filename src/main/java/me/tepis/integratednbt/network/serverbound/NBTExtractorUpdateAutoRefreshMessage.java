@@ -2,6 +2,7 @@ package me.tepis.integratednbt.network.serverbound;
 
 import io.netty.buffer.ByteBuf;
 import me.tepis.integratednbt.NBTExtractorTileEntity;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.BlockPos;
 
 /**
@@ -19,11 +20,21 @@ public class NBTExtractorUpdateAutoRefreshMessage extends NBTExtractorUpdateServ
         ) {
             nbtExtractorTileEntity.updateAutoRefresh(message.autoRefresh);
         }
+
+        @Override
+        protected Class<NBTExtractorUpdateAutoRefreshMessage> getMessageClass() {
+            return NBTExtractorUpdateAutoRefreshMessage.class;
+        }
+
+        @Override
+        protected NBTExtractorUpdateAutoRefreshMessage createEmpty() {
+            return new NBTExtractorUpdateAutoRefreshMessage();
+        }
     }
 
     private boolean autoRefresh;
 
-    public NBTExtractorUpdateAutoRefreshMessage() {}
+    private NBTExtractorUpdateAutoRefreshMessage() {}
 
     public NBTExtractorUpdateAutoRefreshMessage(
         BlockPos blockPos,
@@ -34,13 +45,13 @@ public class NBTExtractorUpdateAutoRefreshMessage extends NBTExtractorUpdateServ
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    public void fromBytes(PacketBuffer buf) {
         super.fromBytes(buf);
         this.autoRefresh = buf.readBoolean();
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    public void toBytes(PacketBuffer buf) {
         super.toBytes(buf);
         buf.writeBoolean(this.autoRefresh);
     }

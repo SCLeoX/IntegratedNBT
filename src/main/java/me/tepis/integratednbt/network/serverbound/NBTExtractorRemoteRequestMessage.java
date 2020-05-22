@@ -1,42 +1,51 @@
 package me.tepis.integratednbt.network.serverbound;
 
-import io.netty.buffer.ByteBuf;
+import me.tepis.integratednbt.Additions;
 import me.tepis.integratednbt.NBTExtractorRemote;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.EnumHand;
-import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import me.tepis.integratednbt.network.Message;
+import me.tepis.integratednbt.network.MessageHandler;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.Hand;
+import net.minecraftforge.fml.network.NetworkEvent.Context;
+
+import java.util.function.Supplier;
 
 /**
  * From client to server;
  * Requests to open the GUI for a NBT Extractor at location
  */
-public class NBTExtractorRemoteRequestMessage implements IMessage {
+public class NBTExtractorRemoteRequestMessage implements Message {
     public static class NBTExtractorRemoteRequestMessageHandler
-        implements IMessageHandler<NBTExtractorRemoteRequestMessage, IMessage> {
-
+        extends MessageHandler<NBTExtractorRemoteRequestMessage> {
         @Override
-        public IMessage onMessage(NBTExtractorRemoteRequestMessage message, MessageContext ctx) {
-            ((WorldServer) ctx.getServerHandler().player.world).addScheduledTask(() -> {
-                EntityPlayerMP player = ctx.getServerHandler().player;
-                NBTExtractorRemote remote = NBTExtractorRemote.getInstance();
-                if (player.getHeldItem(EnumHand.MAIN_HAND).getItem() == remote) {
-                    NBTExtractorRemote.getInstance()
-                        .serverUse(player.getHeldItem(EnumHand.MAIN_HAND), player);
-                } else if (player.getHeldItem(EnumHand.OFF_HAND).getItem() == remote) {
-                    NBTExtractorRemote.getInstance()
-                        .serverUse(player.getHeldItem(EnumHand.OFF_HAND), player);
+        public void onMessage(NBTExtractorRemoteRequestMessage message, Context ctx) {
+            ctx.enqueueWork(() -> {
+                ServerPlayerEntity player = ctx.getSender();
+                NBTExtractorRemote remote = Additions.NBT_EXTRACTOR_REMOTE.get();
+                assert player != null;
+                if (player.getHeldItem(Hand.MAIN_HAND).getItem() == remote) {
+                    remote.serverUse(player.getHeldItem(Hand.MAIN_HAND), player);
+                } else if (player.getHeldItem(Hand.OFF_HAND).getItem() == remote) {
+                    remote.serverUse(player.getHeldItem(Hand.OFF_HAND), player);
                 }
             });
-            return null;
+        }
+
+        @Override
+        protected Class<NBTExtractorRemoteRequestMessage> getMessageClass() {
+            return NBTExtractorRemoteRequestMessage.class;
+        }
+
+        @Override
+        protected NBTExtractorRemoteRequestMessage createEmpty() {
+            return new NBTExtractorRemoteRequestMessage();
         }
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {}
+    public void fromBytes(PacketBuffer buf) {}
 
     @Override
-    public void toBytes(ByteBuf buf) {}
+    public void toBytes(PacketBuffer buf) {}
 }

@@ -1,15 +1,13 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraft.client.gui.AbstractGui;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.api.distmarker.Dist;
 
 /**
  * Represents a part in a texture; Offers help method for quick rendering
  */
-@SideOnly(Side.CLIENT)
+@OnlyIn(Dist.CLIENT)
 public class TexturePart {
     private Texture texture;
     private int x;
@@ -25,12 +23,12 @@ public class TexturePart {
         this.height = height;
     }
 
-    public void renderTo(Gui gui, int x, int y) {
+    public void renderTo(AbstractGui gui, int x, int y) {
         this.texture.bind();
-        gui.drawTexturedModalRect(x, y, this.x, this.y, this.width, this.height);
+        gui.blit(x, y, this.x, this.y, this.width, this.height);
     }
 
-    public void renderTo(ExtendedGuiContainer gui, int x, int y, int width, int height) {
+    public void renderTo(ExtendedContainerScreen<?> gui, int x, int y, int width, int height) {
         this.texture.bind();
         gui.drawTexturedModalRectScalable(
             x,

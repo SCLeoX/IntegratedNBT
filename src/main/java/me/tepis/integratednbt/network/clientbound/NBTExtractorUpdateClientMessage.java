@@ -1,50 +1,61 @@
 package me.tepis.integratednbt.network.clientbound;
 
-import io.netty.buffer.ByteBuf;
 import me.tepis.integratednbt.ByteMaskMaker;
-import me.tepis.integratednbt.NBTExtractorGui;
+import me.tepis.integratednbt.NBTExtractorScreen;
 import me.tepis.integratednbt.NBTExtractorOutputMode;
 import me.tepis.integratednbt.NBTPath;
-import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-import org.cyclops.cyclopscore.helper.L10NHelpers.UnlocalizedString;
+import me.tepis.integratednbt.network.Message;
+import me.tepis.integratednbt.network.MessageHandler;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraftforge.fml.network.NetworkEvent.Context;
 
-import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * From server to client;
  * Updates NBT tree, error code, and/or extraction path for the client
  */
-public class NBTExtractorUpdateClientMessage implements IMessage {
+public class NBTExtractorUpdateClientMessage implements Message {
     public static class NBTExtractorUpdateClientMessageHandler
-        implements IMessageHandler<NBTExtractorUpdateClientMessage, IMessage> {
+        extends MessageHandler<NBTExtractorUpdateClientMessage> {
         @Override
-        public IMessage onMessage(NBTExtractorUpdateClientMessage message, MessageContext ctx) {
-            Minecraft.getMinecraft().addScheduledTask(() -> {
+        protected Class<NBTExtractorUpdateClientMessage> getMessageClass() {
+            return NBTExtractorUpdateClientMessage.class;
+        }
+
+        @Override
+        public void onMessage(
+            NBTExtractorUpdateClientMessage message,
+            Context ctx
+        ) {
+            ctx.enqueueWork(() -> {
                 if (message.isUpdated(MASK_NBT)) {
-                    NBTExtractorGui.updateNBT(message.nbt);
+                    NBTExtractorScreen.updateNBT(message.nbt);
                 }
                 if (message.isUpdated(MASK_ERROR_CODE)) {
-                    NBTExtractorGui.updateError(message.errorCode);
+                    NBTExtractorScreen.updateError(message.errorCode);
                 }
                 if (message.isUpdated(MASK_EXTRACTION_PATH)) {
-                    NBTExtractorGui.updateExtractionPath(message.path);
+                    NBTExtractorScreen.updateExtractionPath(message.path);
                 }
                 if (message.isUpdated(MASK_OUTPUT_MODE)) {
-                    NBTExtractorGui.updateOutputMode(message.outputMode);
+                    NBTExtractorScreen.updateOutputMode(message.outputMode);
                 }
                 if (message.isUpdated(MASK_ERROR_MESSAGE)) {
-                    NBTExtractorGui.updateErrorMessage(message.errorMessage);
+                    NBTExtractorScreen.updateErrorMessage(message.errorMessage);
                 }
                 if (message.isUpdated(MASK_AUTO_REFRESH)) {
-                    NBTExtractorGui.updateAutoRefresh(message.autoRefresh);
+                    NBTExtractorScreen.updateAutoRefresh(message.autoRefresh);
                 }
             });
-            return null;
+        }
+
+        @Override
+        protected NBTExtractorUpdateClientMessage createEmpty() {
+            return new NBTExtractorUpdateClientMessage();
         }
     }
 
@@ -58,15 +69,13 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
 
     private byte updated = 0;
     private ErrorCode errorCode;
-    private NBTTagCompound nbt;
+    private INBT nbt;
     private NBTPath path;
     private NBTExtractorOutputMode outputMode;
-    private UnlocalizedString errorMessage;
+    private ITextComponent errorMessage;
     private boolean autoRefresh;
 
-    public NBTExtractorUpdateClientMessage() {}
-
-    public void updateNBT(NBTTagCompound nbt) {
+    public void updateNBT(INBT nbt) {
         this.nbt = nbt;
         this.updated |= MASK_NBT;
     }
@@ -86,7 +95,7 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
         this.updated |= MASK_OUTPUT_MODE;
     }
 
-    public void updateErrorMessage(UnlocalizedString errorMessage) {
+    public void updateErrorMessage(ITextComponent errorMessage) {
         this.errorMessage = errorMessage;
         this.updated |= MASK_ERROR_MESSAGE;
     }
@@ -101,16 +110,18 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    public void fromBytes(PacketBuffer buf) {
         this.updated = buf.readByte();
         if (this.isUpdated(MASK_NBT)) {
-            this.nbt = ByteBufUtils.readTag(buf);
+            CompoundNBT compound = buf.readCompoundTag();
+            assert compound != null;
+            this.nbt = compound.get("nbt");
         }
         if (this.isUpdated(MASK_ERROR_CODE)) {
             this.errorCode = ErrorCode.values()[buf.readByte()];
         }
         if (this.isUpdated(MASK_EXTRACTION_PATH)) {
-            this.path = NBTPath.fromNBT(ByteBufUtils.readTag(buf)).orElse(new NBTPath());
+            this.path = NBTPath.fromNBT(buf.readCompoundTag()).orElse(new NBTPath());
         }
         if (this.isUpdated(MASK_OUTPUT_MODE)) {
             this.outputMode = NBTExtractorOutputMode.values()[buf.readByte()];
@@ -119,8 +130,7 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
             if (buf.readBoolean()) { // Is null
                 this.errorMessage = null;
             } else {
-                this.errorMessage = new UnlocalizedString();
-                this.errorMessage.fromNBT(Objects.requireNonNull(ByteBufUtils.readTag(buf)));
+                this.errorMessage = buf.readTextComponent();
             }
         }
         if (this.isUpdated(MASK_AUTO_REFRESH)) {
@@ -133,16 +143,18 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    public void toBytes(PacketBuffer buf) {
         buf.writeByte(this.updated);
         if (this.isUpdated(MASK_NBT)) {
-            ByteBufUtils.writeTag(buf, this.nbt);
+            CompoundNBT compound = new CompoundNBT();
+            compound.put("nbt", this.nbt);
+            buf.writeCompoundTag(compound);
         }
         if (this.isUpdated(MASK_ERROR_CODE)) {
             buf.writeByte(this.errorCode.ordinal());
         }
         if (this.isUpdated(MASK_EXTRACTION_PATH)) {
-            ByteBufUtils.writeTag(buf, this.path.toNBTCompound());
+            buf.writeCompoundTag(this.path.toNBTCompound());
         }
         if (this.isUpdated(MASK_OUTPUT_MODE)) {
             buf.writeByte(this.outputMode.ordinal());
@@ -152,7 +164,7 @@ public class NBTExtractorUpdateClientMessage implements IMessage {
                 buf.writeBoolean(true);
             } else {
                 buf.writeBoolean(false);
-                ByteBufUtils.writeTag(buf, this.errorMessage.toNBT());
+                buf.writeTextComponent(this.errorMessage);
             }
         }
         if (this.isUpdated(MASK_AUTO_REFRESH)) {

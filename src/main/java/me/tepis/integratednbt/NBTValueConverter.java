@@ -1,18 +1,17 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagByte;
-import net.minecraft.nbt.NBTTagByteArray;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagDouble;
-import net.minecraft.nbt.NBTTagFloat;
-import net.minecraft.nbt.NBTTagInt;
-import net.minecraft.nbt.NBTTagIntArray;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.nbt.NBTTagLong;
-import net.minecraft.nbt.NBTTagLongArray;
-import net.minecraft.nbt.NBTTagShort;
-import net.minecraft.nbt.NBTTagString;
+import net.minecraft.nbt.ByteArrayNBT;
+import net.minecraft.nbt.ByteNBT;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.DoubleNBT;
+import net.minecraft.nbt.FloatNBT;
+import net.minecraft.nbt.INBT;
+import net.minecraft.nbt.IntArrayNBT;
+import net.minecraft.nbt.IntNBT;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.LongArrayNBT;
+import net.minecraft.nbt.LongNBT;
+import net.minecraft.nbt.ShortNBT;
 import org.apache.commons.lang3.ArrayUtils;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValueType;
@@ -27,15 +26,39 @@ import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public abstract class NBTValueConverter {
-    public static IValueType<? extends IValue> mapNBTToValueType(NBTBase nbt) {
+    public static IValueType<? extends IValue> mapNBTToValueType(INBT nbt) {
         return mapNBTIDToValueType(nbt.getId());
     }
 
+    public static IValueType<?> mapNBTIDToValueType(int nbtId) {
+        switch (nbtId) {
+            case 1: // Byte
+            case 2: // Short
+            case 3: // Int
+                return ValueTypes.INTEGER;
+            case 4: // Long
+                return ValueTypes.LONG;
+            case 5: // Float
+            case 6: // Double
+                return ValueTypes.DOUBLE;
+            case 7: // Byte Array
+            case 9: // List
+            case 11: // Int Array
+            case 12: // Long Array
+                return ValueTypes.LIST;
+            case 8: // String
+                return ValueTypes.STRING;
+            case 10: // Compound
+                return ValueTypes.NBT;
+            default:
+                throw new RuntimeException("Unexpected NBT id:" + nbtId);
+        }
+    }
+
     public static String getDefaultValueDisplayText(int nbtId) {
-        String formatCode = getDefaultValue(nbtId).getType().getDisplayColorFormat();
+        String formatCode = getDefaultValue(nbtId).getType().getDisplayColorFormat().toString();
         switch (nbtId) {
             case 1: // Byte
             case 2: // Short
@@ -79,77 +102,52 @@ public abstract class NBTValueConverter {
                 return ValueList.ofList(ValueTypes.CATEGORY_ANY, new ArrayList<>());
             case 10: // Compound
             default:
-                return ValueNbt.of(new NBTTagCompound());
+                return ValueNbt.of(new CompoundNBT());
         }
     }
 
-    public static IValueType<?> mapNBTIDToValueType(int nbtId) {
-        switch (nbtId) {
-            case 1: // Byte
-            case 2: // Short
-            case 3: // Int
-                return ValueTypes.INTEGER;
-            case 4: // Long
-                return ValueTypes.LONG;
-            case 5: // Float
-            case 6: // Double
-                return ValueTypes.DOUBLE;
-            case 7: // Byte Array
-            case 9: // List
-            case 11: // Int Array
-            case 12: // Long Array
-                return ValueTypes.LIST;
-            case 8: // String
-                return ValueTypes.STRING;
-            case 10: // Compound
-                return ValueTypes.NBT;
-            default:
-                throw new RuntimeException("Unexpected NBT id:" + nbtId);
-        }
-    }
-
-    public static IValue mapNBTToValue(NBTBase nbt) {
+    public static IValue mapNBTToValue(INBT nbt) {
         switch (nbt.getId()) {
             case 1: // Byte
-                return ValueInteger.of(((NBTTagByte) nbt).getInt());
+                return ValueInteger.of(((ByteNBT) nbt).getInt());
             case 2: // Short
-                return ValueInteger.of(((NBTTagShort) nbt).getInt());
+                return ValueInteger.of(((ShortNBT) nbt).getInt());
             case 3: // Int
-                return ValueInteger.of(((NBTTagInt) nbt).getInt());
+                return ValueInteger.of(((IntNBT) nbt).getInt());
             case 4: // Long
-                return ValueLong.of(((NBTTagLong) nbt).getLong());
+                return ValueLong.of(((LongNBT) nbt).getLong());
             case 5: // Float
-                return ValueDouble.of(((NBTTagFloat) nbt).getDouble());
+                return ValueDouble.of(((FloatNBT) nbt).getDouble());
             case 6: // Double
-                return ValueDouble.of(((NBTTagDouble) nbt).getDouble());
+                return ValueDouble.of(((DoubleNBT) nbt).getDouble());
             case 7: // Byte Array
                 return ValueList.ofList(
                     ValueTypes.INTEGER,
-                    Arrays.stream(ArrayUtils.toObject(((NBTTagByteArray) nbt).getByteArray()))
+                    Arrays.stream(ArrayUtils.toObject(((ByteArrayNBT) nbt).getByteArray()))
                         .map(ValueInteger::of)
                         .collect(Collectors.toList())
                 );
             case 8: // String
-                return ValueString.of(((NBTTagString) nbt).getString());
+                return ValueString.of(nbt.getString());
             case 9: // List
                 return ValueList.ofAll(
-                    StreamSupport.stream(((NBTTagList) nbt).spliterator(), false)
+                    ((ListNBT) nbt).stream()
                         .map(NBTValueConverter::mapNBTToValue)
                         .toArray(IValue[]::new)
                 );
             case 10: // Compound
-                return ValueNbt.of((NBTTagCompound) nbt);
+                return ValueNbt.of(nbt);
             case 11: // Int Array
                 return ValueList.ofList(
                     ValueTypes.INTEGER,
-                    Arrays.stream(ArrayUtils.toObject(((NBTTagIntArray) nbt).getIntArray()))
+                    Arrays.stream(ArrayUtils.toObject(((IntArrayNBT) nbt).getIntArray()))
                         .map(ValueInteger::of)
                         .collect(Collectors.toList())
                 );
             case 12: // Long Array
                 return ValueList.ofList(
                     ValueTypes.LONG,
-                    Arrays.stream(ArrayUtils.toObject(((NBTTagLongArray) nbt).data))
+                    Arrays.stream(ArrayUtils.toObject(((LongArrayNBT) nbt).getAsLongArray()))
                         .map(ValueLong::of)
                         .collect(Collectors.toList())
                 );

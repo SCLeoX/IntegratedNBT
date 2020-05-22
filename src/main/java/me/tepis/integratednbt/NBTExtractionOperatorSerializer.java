@@ -1,8 +1,9 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.nbt.JsonToNBT;
-import net.minecraft.nbt.NBTException;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.StringTextComponent;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.operator.IOperator;
 import org.cyclops.integrateddynamics.api.evaluate.operator.IOperatorSerializer;
@@ -14,27 +15,27 @@ public class NBTExtractionOperatorSerializer implements IOperatorSerializer<NBTE
     }
 
     @Override
-    public String getUniqueName() {
-        return "integratednbt.nbt_extraction";
+    public ResourceLocation getUniqueName() {
+        return NBTExtractionOperator.UNIQUE_NAME;
     }
 
     @Override
-    public String serialize(NBTExtractionOperator operator) {
-        NBTTagCompound data = new NBTTagCompound();
-        data.setTag("path", operator.getExtractionPath().toNBT());
-        data.setByte("defaultNBTId", operator.getDefaultNBTId());
-        return data.toString();
+    public INBT serialize(NBTExtractionOperator operator) {
+        CompoundNBT data = new CompoundNBT();
+        data.put("path", operator.getExtractionPath().toNBT());
+        data.putByte("defaultNBTId", operator.getDefaultNBTId());
+        return data;
     }
 
     @Override
-    public NBTExtractionOperator deserialize(String value) throws EvaluationException {
+    public NBTExtractionOperator deserialize(INBT nbt) throws EvaluationException {
         try {
-            NBTTagCompound tag = JsonToNBT.getTagFromJson(value);
-            return new NBTExtractionOperator(NBTPath.fromNBT(tag.getTag("path"))
+            CompoundNBT tag = (CompoundNBT) nbt;
+            return new NBTExtractionOperator(NBTPath.fromNBT(tag.get("path"))
                 .orElse(new NBTPath()), tag.getByte("defaultNBTId"));
-        } catch (NBTException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            throw new EvaluationException(e.getMessage());
+            throw new EvaluationException(new StringTextComponent(e.getMessage()));
         }
     }
 }

@@ -1,12 +1,13 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.resources.I18n;
+import net.minecraft.client.renderer.model.BakedQuad;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.model.data.IModelData;
 import org.cyclops.cyclopscore.datastructure.Wrapper;
-import org.cyclops.cyclopscore.helper.L10NHelpers;
 import org.cyclops.integrateddynamics.api.client.model.IVariableModelBaked;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValueType;
@@ -20,6 +21,7 @@ import org.cyclops.integrateddynamics.core.item.VariableFacadeBase;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Random;
 
 public class NBTExtractedVariableFacade extends VariableFacadeBase {
     private int sourceNBTId;
@@ -68,20 +70,20 @@ public class NBTExtractedVariableFacade extends VariableFacadeBase {
 
 
     @Override
-    @SideOnly(Side.CLIENT)
-    public void addInformation(List<String> list, World world) {
+    @OnlyIn(Dist.CLIENT)
+    public void addInformation(List<ITextComponent> list, World world) {
         if (!this.isValid()) {
             return;
         }
-        list.add(I18n.format(
+        list.add(new TranslationTextComponent(
             "integratednbt:nbt_extracted_variable.tooltip.source_nbt_id",
             this.sourceNBTId
         ));
-        list.add(I18n.format(
+        list.add(new TranslationTextComponent(
             "integratednbt:nbt_extracted_variable.tooltip.path",
             this.extractionPath.getDisplayText()
         ));
-        list.add(I18n.format(
+        list.add(new TranslationTextComponent(
             "integratednbt:nbt_extracted_variable.tooltip.default_value",
             NBTValueConverter.getDefaultValueDisplayText(this.defaultNBTId)
         ));
@@ -91,6 +93,16 @@ public class NBTExtractedVariableFacade extends VariableFacadeBase {
     @Override
     public boolean isValid() {
         return this.extractionPath != null;
+    }
+
+    @Override
+    public void addModelOverlay(
+        IVariableModelBaked variableModelBaked,
+        List<BakedQuad> quads,
+        Random random,
+        IModelData modelData
+    ) {
+
     }
 
     @Override
@@ -137,23 +149,23 @@ public class NBTExtractedVariableFacade extends VariableFacadeBase {
             return;
         }
         if (this.sourceNBTId < 0) {
-            validator.addError(new L10NHelpers.UnlocalizedString(L10NValues.VARIABLE_ERROR_INVALIDITEM));
+            validator.addError(new TranslationTextComponent(L10NValues.VARIABLE_ERROR_INVALIDITEM));
         } else if (!network.hasVariableFacade(this.sourceNBTId)) {
-            validator.addError(new L10NHelpers.UnlocalizedString(
+            validator.addError(new TranslationTextComponent(
                 L10NValues.OPERATOR_ERROR_VARIABLENOTINNETWORK,
                 Integer.toString(this.sourceNBTId)
             ));
         } else {
             IVariableFacade sourceVariableFacade = network.getVariableFacade(this.sourceNBTId);
             if (sourceVariableFacade == this) {
-                validator.addError(new L10NHelpers.UnlocalizedString(
+                validator.addError(new TranslationTextComponent(
                     L10NValues.OPERATOR_ERROR_CYCLICREFERENCE,
                     Integer.toString(this.sourceNBTId)
                 ));
             } else if (sourceVariableFacade != null) {
                 final Wrapper<Boolean> isValid = new Wrapper<>(true);
                 if (this.validating) {
-                    validator.addError(new L10NHelpers.UnlocalizedString(
+                    validator.addError(new TranslationTextComponent(
                         L10NValues.OPERATOR_ERROR_CYCLICREFERENCE,
                         this.getId()
                     ));
@@ -171,10 +183,5 @@ public class NBTExtractedVariableFacade extends VariableFacadeBase {
     @Override
     public IValueType<?> getOutputType() {
         return ValueTypes.CATEGORY_ANY;
-    }
-
-    @Override
-    public void addModelOverlay(IVariableModelBaked variableModelBaked, List<BakedQuad> quads) {
-
     }
 }

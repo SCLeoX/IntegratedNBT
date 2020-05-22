@@ -2,29 +2,33 @@ package me.tepis.integratednbt;
 
 import me.tepis.integratednbt.NBTExtractorTileEntity.NetworkElement;
 import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ItemStackHelper;
+import net.minecraft.inventory.container.Container;
+import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.ITickable;
+import net.minecraft.util.Direction;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.world.IBlockAccess;
+import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
+import net.minecraftforge.common.util.LazyOptional;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.datastructure.EnumFacingMap;
-import org.cyclops.cyclopscore.helper.L10NHelpers.UnlocalizedString;
 import org.cyclops.cyclopscore.helper.MinecraftHelpers;
+import org.cyclops.cyclopscore.persist.nbt.NBTClassType;
 import org.cyclops.integrateddynamics.IntegratedDynamics;
 import org.cyclops.integrateddynamics.api.block.cable.ICable;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
@@ -37,6 +41,7 @@ import org.cyclops.integrateddynamics.api.network.IEventListenableNetworkElement
 import org.cyclops.integrateddynamics.api.network.INetwork;
 import org.cyclops.integrateddynamics.api.network.INetworkElement;
 import org.cyclops.integrateddynamics.api.network.INetworkEventListener;
+import org.cyclops.integrateddynamics.api.network.IPartNetwork;
 import org.cyclops.integrateddynamics.api.network.IPositionedAddonsNetwork;
 import org.cyclops.integrateddynamics.api.network.event.INetworkEvent;
 import org.cyclops.integrateddynamics.capability.network.NetworkCarrierDefault;
@@ -56,21 +61,20 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
-public class NBTExtractorTileEntity extends TileEntity implements ICapabilityProvider, IInventory,
-    INetworkEventListener<NetworkElement>, ITickable {
+public class NBTExtractorTileEntity extends TileEntity implements ICapabilityProvider,
+    INetworkEventListener<NetworkElement>, ITickableTileEntity, INamedContainerProvider,
+    IInventory {
     class CableCapability implements ICable {
         @Override
-        public boolean canConnect(ICable connector, EnumFacing side) {
+        public boolean canConnect(ICable connector, Direction side) {
             return true;
         }
 
         @Override
-        public boolean isConnected(EnumFacing side) {
+        public boolean isConnected(Direction side) {
             if (NBTExtractorTileEntity.this.connected.isEmpty()) {
                 this.updateConnections();
             }
@@ -81,7 +85,10 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         public void updateConnections() {
             NBTExtractorTileEntity entity = NBTExtractorTileEntity.this;
             World world = entity.getWorld();
-            for (EnumFacing side : EnumFacing.VALUES) {
+            if (world == null) {
+                return;
+            }
+            for (Direction side : Direction.values()) {
                 boolean cableConnected = CableHelpers.canCableConnectTo(
                     world,
                     entity.getPos(),
@@ -90,20 +97,20 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
                 );
                 entity.connected.put(side, cableConnected);
             }
-            entity.getWorld().markChunkDirty(entity.getPos(), entity);
-            IBlockState blockState = world.getBlockState(NBTExtractorTileEntity.this.pos);
+            world.markChunkDirty(entity.getPos(), entity);
+            BlockState blockState = world.getBlockState(NBTExtractorTileEntity.this.pos);
             world.notifyBlockUpdate(NBTExtractorTileEntity.this.pos, blockState, blockState, 3);
         }
 
         @Override
-        public void disconnect(EnumFacing side) {}
+        public void disconnect(Direction side) {}
 
         @Override
-        public void reconnect(EnumFacing side) {}
+        public void reconnect(Direction side) {}
 
         @Override
         public ItemStack getItemStack() {
-            return new ItemStack(NBTExtractor.getInstance().getItemBlock());
+            return new ItemStack(Additions.NBT_EXTRACTOR_BLOCK_ITEM.get());
         }
 
         @Override
@@ -144,20 +151,28 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
 
         @Override
         public boolean onNetworkAddition(INetwork network) {
-            return Objects.requireNonNull(NetworkHelpers.getPartNetwork(network))
+            if (NBTExtractorTileEntity.this.world == null) {
+                return false;
+            }
+            return NetworkHelpers.getPartNetwork(network).map(partNetwork -> partNetwork
                 .addVariableContainer(DimPos.of(
                     NBTExtractorTileEntity.this.world,
                     NBTExtractorTileEntity.this.pos
-                ));
+                ))
+            ).orElse(false);
         }
 
         @Override
         public void onNetworkRemoval(INetwork network) {
-            Objects.requireNonNull(NetworkHelpers.getPartNetwork(network))
+            if (NBTExtractorTileEntity.this.world == null) {
+                return;
+            }
+            NetworkHelpers.getPartNetwork(network).ifPresent(partNetwork -> partNetwork
                 .removeVariableContainer(DimPos.of(
                     NBTExtractorTileEntity.this.world,
                     NBTExtractorTileEntity.this.pos
-                ));
+                ))
+            );
         }
 
         @Override
@@ -169,12 +184,10 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         @Override
         public void onNeighborBlockChange(
             @Nullable INetwork network,
-            IBlockAccess world,
+            IBlockReader world,
             Block neighbourBlock,
             BlockPos neighbourBlockPos
-        ) {
-
-        }
+        ) {}
 
         @Override
         public void setPriorityAndChannel(INetwork network, int priority, int channel) {}
@@ -195,7 +208,11 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public boolean canRevalidate(INetwork network) {
+            if (NBTExtractorTileEntity.this.world == null) {
+                return false;
+            }
             return NBTExtractorTileEntity.this.world
                 .isBlockLoaded(NBTExtractorTileEntity.this.getPos());
         }
@@ -214,8 +231,8 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
 
         @Nullable
         @Override
-        public NBTExtractorTileEntity getNetworkEventListener() {
-            return NBTExtractorTileEntity.this;
+        public Optional<NBTExtractorTileEntity> getNetworkEventListener() {
+            return Optional.of(NBTExtractorTileEntity.this);
         }
     }
 
@@ -265,15 +282,16 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     private NBTPath extractionPath = new NBTPath();
     private byte defaultNBTId = 1;
     private NBTExtractorOutputMode outputMode = NBTExtractorOutputMode.REFERENCE;
-    private NBTTagCompound lastEvaluatedNBT = null;
+    private INBT lastEvaluatedNBT = null;
     private boolean autoRefresh = true;
-    private NBTTagCompound frozenNBT = null;
+    private INBT frozenNBT = null;
     /**
      * The item stack that yielded the current frozen NBT
      */
     private ItemStack frozenNBTItemStack = ItemStack.EMPTY;
 
     public NBTExtractorTileEntity() {
+        super(Additions.NBT_EXTRACTOR_TILE_ENTITY.get());
         this.expandedPaths = new HashSet<>();
         this.expandedPaths.add(new NBTPath());
     }
@@ -290,10 +308,13 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     @Override
     public void markDirty() {
         super.markDirty();
+        if (this.world == null) {
+            return;
+        }
         if (!this.world.isRemote) {
             this.refreshVariables(true);
             this.shouldUpdateOutVariable = true;
-            if (!this.autoRefresh && !ItemStack.areItemStacksEqualUsingNBTShareTag(
+            if (!this.autoRefresh && !ItemStack.areItemStacksEqual(
                 this.getStackInSlot(SRC_NBT_SLOT),
                 this.frozenNBTItemStack
             )) {
@@ -355,7 +376,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         this.markDirty();
     }
 
-    public void updateLastEvaluatedNBT(NBTTagCompound lastEvaluatedNBT) {
+    public void updateLastEvaluatedNBT(INBT lastEvaluatedNBT) {
         this.lastEvaluatedNBT = lastEvaluatedNBT;
         if (!this.autoRefresh && this.frozenNBT == null) {
             this.frozenNBT = this.lastEvaluatedNBT;
@@ -371,14 +392,19 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         return this.scrollTop;
     }
 
+    @SuppressWarnings("ConstantConditions")
     public IVariable<?> getSrcNBTVariable() {
-        return this.evaluator.getVariable(
+        IPartNetwork partNetwork =
             NetworkHelpers.getPartNetwork(this.networkCarrierCapability.getNetwork())
-        );
+                .orElse(null);
+        if (partNetwork == null) {
+            return null;
+        }
+        return this.evaluator.getVariable(partNetwork);
     }
 
-    public UnlocalizedString getFirstErrorMessage() {
-        List<UnlocalizedString> errors = this.evaluator.getErrors();
+    public ITextComponent getFirstErrorMessage() {
+        List<ITextComponent> errors = this.evaluator.getErrors();
         if (errors.isEmpty()) {
             return null;
         } else {
@@ -386,29 +412,20 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         }
     }
 
-    @Override
-    public boolean hasCapability(@Nonnull Capability<?> capability, EnumFacing facing) {
-        return (
-            capability == Capabilities.CABLE_CAPABILITY
-                || capability == Capabilities.NETWORK_CARRIER_CAPABILITY
-                || capability == Capabilities.PATH_ELEMENT_CAPABILITY
-                || capability == Capabilities.VARIABLE_CONTAINER_CAPABILITY
-                || capability == Capabilities.NETWORK_ELEMENT_PROVIDER);
-    }
-
+    @Nonnull
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getCapability(@Nonnull Capability<T> capability, EnumFacing facing) {
+    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> capability, Direction facing) {
         if (capability == Capabilities.CABLE_CAPABILITY) {
-            return (T) this.cableCapability;
+            return LazyOptional.of(() -> (T) this.cableCapability);
         } else if (capability == Capabilities.NETWORK_CARRIER_CAPABILITY) {
-            return (T) this.networkCarrierCapability;
+            return LazyOptional.of(() -> (T) this.networkCarrierCapability);
         } else if (capability == Capabilities.PATH_ELEMENT_CAPABILITY) {
-            return (T) this.pathElementCapability;
+            return LazyOptional.of(() -> (T) this.pathElementCapability);
         } else if (capability == Capabilities.VARIABLE_CONTAINER_CAPABILITY) {
-            return (T) this.variableContainerCapability;
+            return LazyOptional.of(() -> (T) this.variableContainerCapability);
         } else if (capability == Capabilities.NETWORK_ELEMENT_PROVIDER) {
-            return (T) this.networkElementProviderCapability;
+            return LazyOptional.of(() -> (T) this.networkElementProviderCapability);
         }
         return super.getCapability(capability, facing);
     }
@@ -449,7 +466,10 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     }
 
     @Override
-    public boolean isUsableByPlayer(@Nonnull EntityPlayer player) {
+    public boolean isUsableByPlayer(@Nonnull PlayerEntity player) {
+        if (this.world == null) {
+            return false;
+        }
         if (this.world.getTileEntity(this.pos) != this) {
             return false;
         } else {
@@ -469,24 +489,27 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
      * Tests whether the given item stack is a remote for this NBT Extractor.
      */
     private boolean isRemote(ItemStack itemStack) {
-        if (itemStack.getItem() != NBTExtractorRemote.getInstance()) {
+        if (this.world == null) {
             return false;
         }
-        NBTTagCompound tag = NBTExtractorRemote.getInstance().getModNBT(itemStack);
-        return (tag.hasKey("world")) &&
-            (tag.getInteger("world") == this.world.provider.getDimension()) &&
-            (tag.getInteger("x") == this.pos.getX()) &&
-            (tag.getInteger("y") == this.pos.getY()) &&
-            (tag.getInteger("z") == this.pos.getZ());
+        if (itemStack.getItem() != Additions.NBT_EXTRACTOR_REMOTE.get()) {
+            return false;
+        }
+        CompoundNBT tag = Additions.NBT_EXTRACTOR_REMOTE.get().getModNBT(itemStack);
+        return (tag.contains("world")) &&
+            (tag.getInt("world") == this.world.getDimension().getType().getId()) &&
+            (tag.getInt("x") == this.pos.getX()) &&
+            (tag.getInt("y") == this.pos.getY()) &&
+            (tag.getInt("z") == this.pos.getZ());
     }
 
     @Override
-    public void openInventory(@Nonnull EntityPlayer player) {
+    public void openInventory(@Nonnull PlayerEntity player) {
 
     }
 
     @Override
-    public void closeInventory(@Nonnull EntityPlayer player) {
+    public void closeInventory(@Nonnull PlayerEntity player) {
 
     }
 
@@ -495,7 +518,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         return Integration.isVariable(stack);
     }
 
-    public NBTTagCompound getFrozenValue() {
+    public INBT getFrozenValue() {
         if (this.autoRefresh) {
             return null;
         } else {
@@ -504,34 +527,8 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     }
 
     @Override
-    public int getField(int id) {
-        return 0;
-    }
-
-    @Override
-    public void setField(int id, int value) {
-
-    }
-
-    @Override
-    public int getFieldCount() {
-        return 0;
-    }
-
-    @Override
     public void clear() {
         this.itemStacks.clear();
-    }
-
-    @Override
-    @Nonnull
-    public String getName() {
-        return NBTExtractor.TRANSLATION_KEY;
-    }
-
-    @Override
-    public boolean hasCustomName() {
-        return false;
     }
 
     @Override
@@ -562,7 +559,80 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     }
 
     @Override
-    public void update() {
+    @Nonnull
+    public CompoundNBT write(CompoundNBT tag) {
+        super.write(tag);
+        ListNBT errorsList = new ListNBT();
+        NBTClassType.writeNbt(List.class, "errors", this.evaluator.getErrors(), tag);
+        tag.put("errors", errorsList);
+        tag.put("path", this.extractionPath.toNBT());
+        tag.putByte("defaultNBTId", this.defaultNBTId);
+        tag.putByte("outputMode", (byte) this.outputMode.ordinal());
+        tag.putBoolean("isAutoRefresh", this.autoRefresh);
+        if (!this.autoRefresh) {
+            tag.put("frozenNBT", this.frozenNBT);
+            tag.put(
+                "frozenNBTItemStack",
+                this.frozenNBTItemStack.write(new CompoundNBT())
+            );
+        }
+        ItemStackHelper.saveAllItems(tag, this.itemStacks);
+        return tag;
+    }
+
+    @Nonnull
+    @Override
+    public ITextComponent getDisplayName() {
+        return new TranslationTextComponent("tile.integratednbt:nbt_extractor.name");
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void read(CompoundNBT tag) {
+        if (tag.contains("errors")) {
+            this.evaluator.setErrors(NBTClassType.readNbt(List.class, "errors", tag));
+        }
+        if (tag.contains("path")) {
+            this.extractionPath = NBTPath.fromNBT(tag.get("path")).orElse(new NBTPath());
+        }
+        if (tag.contains("defaultNBTId")) {
+            this.defaultNBTId = tag.getByte("defaultNBTId");
+        }
+        if (tag.contains("outputMode")) {
+            this.outputMode = NBTExtractorOutputMode.values()[tag.getByte("outputMode")];
+        }
+        if (tag.contains("isAutoRefresh")) {
+            this.autoRefresh = tag.getBoolean("isAutoRefresh");
+            if (!this.autoRefresh) {
+                this.frozenNBT = tag.getCompound("frozenNBT");
+                this.frozenNBTItemStack = ItemStack.read(tag.getCompound("frozenNBTItemStack"));
+            }
+        }
+        ItemStackHelper.loadAllItems(tag, this.itemStacks);
+        this.shouldRefreshVariable = true;
+        super.read(tag);
+    }
+
+    public void afterNetworkReAlive() {
+        this.shouldRefreshVariable = true;
+        this.connected.clear();
+    }
+
+    @Nullable
+    @Override
+    public Container createMenu(
+        int windowId,
+        @Nonnull PlayerInventory inventory,
+        @Nonnull PlayerEntity player
+    ) {
+        return new NBTExtractorContainer(windowId, inventory, this);
+    }
+
+    @Override
+    public void tick() {
+        if (this.world == null) {
+            return;
+        }
         if (!this.world.isRemote) {
             if (this.shouldRefreshVariable && this.networkCarrierCapability.getNetwork() != null) {
                 this.shouldRefreshVariable = false;
@@ -632,7 +702,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
                 NBTExtractedVariableFacadeHandler.getInstance(),
                 factory,
                 null,
-                this.getBlockType()
+                this.getBlockState()
             );
         } else {
             return null;
@@ -650,7 +720,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     @Nullable
     private ItemStack getVariableByValueMode() {
         this.refreshVariables(true);
-        NBTBase extractedNBT = this.extractionPath.extract(
+        INBT extractedNBT = this.extractionPath.extract(
             (!this.autoRefresh && this.frozenNBT != null)
                 ? this.frozenNBT
                 : this.lastEvaluatedNBT);
@@ -684,75 +754,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
                 }
             },
             null,
-            this.getBlockType()
+            this.getBlockState()
         );
-    }
-
-    @Override
-    @Nonnull
-    public NBTTagCompound writeToNBT(NBTTagCompound tag) {
-        NBTTagList errorsList = new NBTTagList();
-        for (UnlocalizedString error : this.evaluator.getErrors()) {
-            errorsList.appendTag(error.toNBT());
-        }
-        tag.setTag("errors", errorsList);
-        tag.setTag("path", this.extractionPath.toNBT());
-        tag.setByte("defaultNBTId", this.defaultNBTId);
-        tag.setByte("outputMode", (byte) this.outputMode.ordinal());
-        tag.setBoolean("isAutoRefresh", this.autoRefresh);
-        if (!this.autoRefresh) {
-            tag.setTag("frozenNBT", this.frozenNBT);
-            tag.setTag(
-                "frozenNBTItemStack",
-                this.frozenNBTItemStack.writeToNBT(new NBTTagCompound())
-            );
-        }
-        ItemStackHelper.saveAllItems(tag, this.itemStacks);
-        return super.writeToNBT(tag);
-    }
-
-    @Nonnull
-    @Override
-    public ITextComponent getDisplayName() {
-        ITextComponent superDisplayName = super.getDisplayName();
-        return superDisplayName == null ? new TextComponentString("") : superDisplayName;
-    }
-
-    @Override
-    public void readFromNBT(NBTTagCompound tag) {
-        if (tag.hasKey("errors")) {
-            NBTTagList errorsList = tag.getTagList("errors", 10 /* Compound */);
-            this.evaluator.setErrors(StreamSupport.stream(errorsList.spliterator(), false)
-                .map(nbtBase -> {
-                    UnlocalizedString string = new UnlocalizedString();
-                    string.fromNBT((NBTTagCompound) nbtBase);
-                    return string;
-                })
-                .collect(Collectors.toList()));
-        }
-        if (tag.hasKey("path")) {
-            this.extractionPath = NBTPath.fromNBT(tag.getTag("path")).orElse(new NBTPath());
-        }
-        if (tag.hasKey("defaultNBTId")) {
-            this.defaultNBTId = tag.getByte("defaultNBTId");
-        }
-        if (tag.hasKey("outputMode")) {
-            this.outputMode = NBTExtractorOutputMode.values()[tag.getByte("outputMode")];
-        }
-        if (tag.hasKey("isAutoRefresh")) {
-            this.autoRefresh = tag.getBoolean("isAutoRefresh");
-            if (!this.autoRefresh) {
-                this.frozenNBT = tag.getCompoundTag("frozenNBT");
-                this.frozenNBTItemStack = new ItemStack(tag.getCompoundTag("frozenNBTItemStack"));
-            }
-        }
-        ItemStackHelper.loadAllItems(tag, this.itemStacks);
-        this.shouldRefreshVariable = true;
-        super.readFromNBT(tag);
-    }
-
-    public void afterNetworkReAlive() {
-        this.shouldRefreshVariable = true;
-        this.connected.clear();
     }
 }

@@ -1,21 +1,22 @@
 package me.tepis.integratednbt;
 
+import me.tepis.integratednbt.network.PacketHandler;
 import me.tepis.integratednbt.network.clientbound.NBTExtractorUpdateClientMessage.ErrorCode;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateAutoRefreshMessage;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateExtractionPathMessage;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateOutputModeMessage;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.resources.I18n;
-import net.minecraft.inventory.Slot;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import org.cyclops.cyclopscore.helper.L10NHelpers.UnlocalizedString;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.container.Slot;
+import net.minecraft.nbt.INBT;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.network.PacketDistributor;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -28,8 +29,8 @@ import static org.lwjgl.opengl.GL11.glScaled;
 import static org.lwjgl.opengl.GL11.glScissor;
 import static org.lwjgl.opengl.GL11.glTranslated;
 
-@SideOnly(Side.CLIENT)
-public class NBTExtractorGui extends ExtendedGuiContainer {
+@OnlyIn(Dist.CLIENT)
+public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorContainer> {
     public static final int SCREEN_EDGE = 4;
     public static final Texture GUI_TEXTURE = new Texture(
         "integratednbt",
@@ -128,17 +129,18 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
     private static final int BUTTON_SPACING = 2;
 
     // These are static because GUI sometimes after receiving the update packets.
-    private static NBTExtractorGui lastInstance = null;
+    private static NBTExtractorScreen lastInstance = null;
     // Null signify that the first update packet has not arrived yet.
     private static ErrorCode errorCode = null;
-    private static NBTTagCompound nbt;
+    private static INBT nbt;
     private static NBTPath extractionPath = null;
     private static NBTExtractorOutputMode outputMode = null;
-    private static UnlocalizedString errorMessage = null;
+    private static ITextComponent errorMessage = null;
     private static Boolean autoRefresh = null;
 
     private NBTTreeViewer treeViewer;
     private NBTExtractorContainer nbtExtractorContainer;
+    private FontRenderer fontRenderer = Minecraft.getInstance().fontRenderer;
     /**
      * Padding outside the GUI; Responsive; Updated by updateCalculations
      */
@@ -154,25 +156,31 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
     /**
      * The scale factor of Minecraft; Updated by updateCalculations
      */
-    private int scaleFactor;
+    private double scaleFactor;
     private HoverTextImageButton outputModeButton;
     private HoverTextImageButton autoRefreshButton;
 
-    public NBTExtractorGui(NBTExtractorContainer nbtExtractorContainer) {
-        super(nbtExtractorContainer);
-        NBTExtractorGui.lastInstance = this;
-        this.nbtExtractorContainer = nbtExtractorContainer;
-        NBTExtractorTileEntity tileEntity = nbtExtractorContainer.getNbtExtractorEntity();
+    public NBTExtractorScreen(
+        NBTExtractorContainer screenContainer,
+        PlayerInventory inventory,
+        ITextComponent title
+    ) {
+        super(screenContainer, inventory, title);
+        NBTExtractorScreen.lastInstance = this;
+        this.nbtExtractorContainer = screenContainer;
+        NBTExtractorTileEntity tileEntity = this.nbtExtractorContainer.getNbtExtractorEntity();
         this.treeViewer = new NBTTreeViewer(
             this,
             tileEntity.getExpandedPaths(),
             tileEntity.getScrollTop()
         ) {
             @Override
-            public void onUpdateSelectedPath(NBTPath newPath, NBTBase nbt) {
-                IntegratedNBT.getNetworkChannel().sendToServer(
+            public void onUpdateSelectedPath(NBTPath newPath, INBT nbt) {
+                PacketHandler.INSTANCE.send(
+                    PacketDistributor.SERVER.noArg(),
                     new NBTExtractorUpdateExtractionPathMessage(
-                        nbtExtractorContainer.getNbtExtractorEntity().getPos(),
+                        NBTExtractorScreen.this.nbtExtractorContainer.getNbtExtractorEntity()
+                            .getPos(),
                         newPath,
                         nbt.getId()
                     )
@@ -187,19 +195,19 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
     }
 
     public static void updateError(ErrorCode errorCode) {
-        NBTExtractorGui.errorCode = errorCode;
+        NBTExtractorScreen.errorCode = errorCode;
     }
 
-    public static void updateNBT(NBTTagCompound nbt) {
-        NBTExtractorGui.nbt = nbt;
+    public static void updateNBT(INBT nbt) {
+        NBTExtractorScreen.nbt = nbt;
     }
 
     public static void updateExtractionPath(NBTPath extractionPath) {
-        NBTExtractorGui.extractionPath = extractionPath;
+        NBTExtractorScreen.extractionPath = extractionPath;
     }
 
     public static void updateOutputMode(NBTExtractorOutputMode outputMode) {
-        NBTExtractorGui.outputMode = outputMode;
+        NBTExtractorScreen.outputMode = outputMode;
         if (lastInstance != null) {
             lastInstance.updateOutputModeButton();
         }
@@ -252,79 +260,15 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
         this.outputModeButton.setHoverText(messages);
     }
 
-    public static void updateErrorMessage(UnlocalizedString errorMessage) {
-        NBTExtractorGui.errorMessage = errorMessage;
+    public static void updateErrorMessage(ITextComponent errorMessage) {
+        NBTExtractorScreen.errorMessage = errorMessage;
     }
 
     public static void updateAutoRefresh(Boolean autoRefresh) {
-        NBTExtractorGui.autoRefresh = autoRefresh;
+        NBTExtractorScreen.autoRefresh = autoRefresh;
         if (lastInstance != null) {
             lastInstance.updateAutoRefreshButton();
         }
-    }
-
-    @Override
-    public void onGuiClosed() {
-        lastInstance = null;
-        errorCode = null;
-        nbt = null;
-        extractionPath = null;
-        outputMode = null;
-        errorMessage = null;
-        super.onGuiClosed();
-    }
-
-    @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        super.mouseClicked(mouseX, mouseY, mouseButton);
-        this.treeViewer.mouseClicked(mouseButton);
-    }
-
-    @Override
-    public void initGui() {
-        this.updateCalculations();
-        this.xSize = this.width - 2 * this.padding;
-        this.ySize = this.height - 2 * this.padding;
-        super.initGui();
-        this.nbtExtractorContainer.setSlotOffset(
-            (this.xSize - INVENTORY_WIDTH) / 2,
-            this.ySize - INVENTORY_HEIGHT
-        );
-        this.treeViewer.updateBounds(
-            this.padding + SIDE_BORDER_SIZE,
-            this.padding + TOP_BORDER_SIZE,
-            this.screenWidth,
-            this.screenHeight
-        );
-        this.outputModeButton = new HoverTextImageButton(
-            this,
-            0,
-            this.width - this.padding - 7 - BUTTON_SIZE,
-            this.padding + 7
-        );
-        this.updateOutputModeButton();
-        this.addButton(this.outputModeButton);
-        this.autoRefreshButton = new HoverTextImageButton(
-            this,
-            1,
-            this.width - this.padding - 7 - BUTTON_SIZE * 2 - BUTTON_SPACING,
-            this.padding + 7
-        );
-        this.updateAutoRefreshButton();
-        this.addButton(this.autoRefreshButton);
-    }
-
-    /**
-     * Update
-     */
-    private void updateCalculations() {
-        this.scaleFactor = new ScaledResolution(Minecraft.getMinecraft()).getScaleFactor();
-        this.padding = (int) Math.min(
-            Math.max(BASE_PADDING / Math.pow(this.scaleFactor, 3), 4),
-            Math.min(this.width, this.height) / 10.
-        );
-        this.screenWidth = this.width - 2 * this.padding - 2 * SIDE_BORDER_SIZE;
-        this.screenHeight = this.height - 2 * this.padding - TOP_BORDER_SIZE - INVENTORY_HEIGHT;
     }
 
     private void updateAutoRefreshButton() {
@@ -366,26 +310,121 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
     }
 
     @Override
-    public void handleMouseInput() throws IOException {
-        super.handleMouseInput();
-        if (errorCode == ErrorCode.NO_ERROR && nbt != null) {
-            this.treeViewer.handleMouseInput();
-        }
+    public boolean mouseClicked(
+        double mouseX,
+        double mouseY,
+        int mouseButton
+    ) {
+        super.mouseClicked(mouseX, mouseY, mouseButton);
+        this.treeViewer.mouseClicked(mouseButton);
+        return true;
     }
 
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        this.drawDefaultBackground();
-        super.drawScreen(mouseX, mouseY, partialTicks);
-        this.renderHoveredToolTip(mouseX, mouseY);
+    @Override
+    protected void init() {
+        this.updateCalculations();
+        this.xSize = this.width - 2 * this.padding;
+        this.ySize = this.height - 2 * this.padding;
+        super.init();
+        this.nbtExtractorContainer.setSlotOffset(
+            (this.xSize - INVENTORY_WIDTH) / 2,
+            this.ySize - INVENTORY_HEIGHT
+        );
+        this.treeViewer.updateBounds(
+            this.padding + SIDE_BORDER_SIZE,
+            this.padding + TOP_BORDER_SIZE,
+            this.screenWidth,
+            this.screenHeight
+        );
+        this.outputModeButton = new HoverTextImageButton(
+            this,
+            this.width - this.padding - 7 - BUTTON_SIZE,
+            this.padding + 7,
+            this::onOutputModeButtonClick
+        );
+        this.updateOutputModeButton();
+        this.addButton(this.outputModeButton);
+        this.autoRefreshButton = new HoverTextImageButton(
+            this,
+            this.width - this.padding - 7 - BUTTON_SIZE * 2 - BUTTON_SPACING,
+            this.padding + 7,
+            this::onAutoRefreshButtonClick
+        );
+        this.updateAutoRefreshButton();
+        this.addButton(this.autoRefreshButton);
+    }
+
+    /**
+     * Update
+     */
+    private void updateCalculations() {
+        this.scaleFactor = Minecraft.getInstance().getMainWindow().getGuiScaleFactor();
+        this.padding = (int) Math.min(
+            Math.max(BASE_PADDING / Math.pow(this.scaleFactor, 3), 4),
+            Math.min(this.width, this.height) / 10.
+        );
+        this.screenWidth = this.width - 2 * this.padding - 2 * SIDE_BORDER_SIZE;
+        this.screenHeight = this.height - 2 * this.padding - TOP_BORDER_SIZE - INVENTORY_HEIGHT;
+    }
+
+    public void onOutputModeButtonClick(Button ignored) {
+        if (outputMode == null) {
+            return;
+        }
+        PacketHandler.INSTANCE.send(
+            PacketDistributor.SERVER.noArg(),
+            new NBTExtractorUpdateOutputModeMessage(
+                this.nbtExtractorContainer.getNbtExtractorEntity().getPos(),
+                NBTExtractorOutputMode.values()[(outputMode.ordinal() + 1) %
+                    NBTExtractorOutputMode.values().length]
+            )
+        );
+    }
+
+    public void onAutoRefreshButtonClick(Button ignored) {
+        if (autoRefresh == null) {
+            return;
+        }
+        PacketHandler.INSTANCE.send(
+            PacketDistributor.SERVER.noArg(),
+            new NBTExtractorUpdateAutoRefreshMessage(
+                this.nbtExtractorContainer.getNbtExtractorEntity().getPos(),
+                !autoRefresh
+            )
+        );
+    }
+
+    @Override
+    public boolean mouseScrolled(
+        double mouseX,
+        double mouseY,
+        double dWheel
+    ) {
+        super.mouseScrolled(mouseX, mouseY, dWheel);
+        if (errorCode == ErrorCode.NO_ERROR && nbt != null) {
+            this.treeViewer.mouseScrolled(dWheel);
+        }
+        return true;
+    }
+
+    @Override
+    protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
         this.outputModeButton.drawHover(mouseX, mouseY);
         this.autoRefreshButton.drawHover(mouseX, mouseY);
+    }
+
+    @Override
+    public void render(int mouseX, int mouseY, float partialTicks) {
+        this.renderBackground();
+        super.render(mouseX, mouseY, partialTicks);
+        this.renderHoveredToolTip(mouseX, mouseY);
     }
 
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
         this.renderGuiParts();
         this.fontRenderer.drawString(
-            I18n.format("tile.integratednbt:nbt_extractor.name"),
+            I18n.format("block.integratednbt.nbt_extractor"),
             this.padding + 8,
             this.padding + 9,
             4210752
@@ -394,10 +433,10 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
         // In this case, we only want to render in the screen area of the NBT Extractor.
         glEnable(GL_SCISSOR_TEST);
         glScissor(
-            this.scaleFactor * (this.padding + SIDE_BORDER_SIZE),
-            this.scaleFactor * (this.padding + INVENTORY_HEIGHT),
-            this.scaleFactor * this.screenWidth,
-            this.scaleFactor * this.screenHeight
+            (int) this.scaleFactor * (this.padding + SIDE_BORDER_SIZE),
+            (int) this.scaleFactor * (this.padding + INVENTORY_HEIGHT),
+            (int) this.scaleFactor * this.screenWidth,
+            (int) this.scaleFactor * this.screenHeight
         );
         Slot srcNBTSlot = this.nbtExtractorContainer.getSrcNBTSlot();
         if (!srcNBTSlot.getHasStack()) {
@@ -414,25 +453,19 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
     }
 
     @Override
-    protected void actionPerformed(GuiButton button) {
-        if (button == this.outputModeButton) {
-            if (outputMode == null) {
-                return;
-            }
-            IntegratedNBT.getNetworkChannel().sendToServer(new NBTExtractorUpdateOutputModeMessage(
-                this.nbtExtractorContainer.getNbtExtractorEntity().getPos(),
-                NBTExtractorOutputMode.values()[(outputMode.ordinal() + 1) %
-                    NBTExtractorOutputMode.values().length]
-            ));
-        } else if (button == this.autoRefreshButton) {
-            if (autoRefresh == null) {
-                return;
-            }
-            IntegratedNBT.getNetworkChannel().sendToServer(new NBTExtractorUpdateAutoRefreshMessage(
-                this.nbtExtractorContainer.getNbtExtractorEntity().getPos(),
-                !autoRefresh
-            ));
-        }
+    public void onClose() {
+        lastInstance = null;
+        errorCode = null;
+        nbt = null;
+        extractionPath = null;
+        outputMode = null;
+        errorMessage = null;
+        super.onClose();
+    }
+
+    @Override
+    public boolean isPauseScreen() {
+        return false;
     }
 
     private void renderGuiParts() {
@@ -508,7 +541,7 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
     private void renderError() {
         String message = "";
         if (errorMessage != null) {
-            message = errorMessage.localize();
+            message = errorMessage.getFormattedText();
         } else {
             switch (errorCode) {
                 case EVAL_ERROR:
@@ -540,7 +573,7 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
                 this.scaleAt(x, y, 2);
                 this.fontRenderer.drawString(
                     title,
-                    -titleWidth / 2,
+                    -titleWidth / 2f,
                     -this.fontRenderer.FONT_HEIGHT - 1,
                     titleColor
                 );
@@ -561,7 +594,7 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
             } else {
                 this.fontRenderer.drawString(
                     description,
-                    -descriptionWidth / 2,
+                    -descriptionWidth / 2f,
                     4,
                     0xFFFFFF
                 );
@@ -582,15 +615,5 @@ public class NBTExtractorGui extends ExtendedGuiContainer {
     private void scaleAt(int x, int y, double scale) {
         glScaled(scale, scale, 1d);
         glTranslated(x / scale, y / scale, 0d);
-    }
-
-    @Override
-    protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
-
-    }
-
-    @Override
-    public boolean doesGuiPauseGame() {
-        return false;
     }
 }

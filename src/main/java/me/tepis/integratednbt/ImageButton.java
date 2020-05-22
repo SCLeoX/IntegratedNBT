@@ -1,41 +1,36 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeOperator.ValueOperator;
-
-import javax.annotation.Nonnull;
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.gui.widget.button.Button;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
  * Basically net.minecraft.client.gui.ImageButton, but more dynamic
  */
-@SideOnly(Side.CLIENT)
-public class ImageButton extends GuiButton {
+@OnlyIn(Dist.CLIENT)
+public class ImageButton extends Button {
     private TexturePart textureNormal;
     private TexturePart textureHover;
 
     public ImageButton(
-        int buttonId,
         TexturePart textureNormal,
         TexturePart textureHover,
         int x,
-        int y
+        int y,
+        Button.IPressable onPress
     ) {
-        super(buttonId, x, y, "");
+        super(x, y, textureNormal.getWidth(), textureNormal.getHeight(), "", onPress);
         this.textureNormal = textureNormal;
         this.textureHover = textureHover;
-        this.width = textureNormal.getWidth();
-        this.height = textureNormal.getHeight();
     }
 
     /**
      * For lazy initialization of textures.
      */
-    public ImageButton(int buttonId, int x, int y) {
-        super(buttonId, x, y, "");
+    public ImageButton(int x, int y, Button.IPressable onPress) {
+        super(x, y, 1, 1, "", onPress);
     }
 
     public void setTexture(TexturePart textureNormal, TexturePart textureHover) {
@@ -49,17 +44,17 @@ public class ImageButton extends GuiButton {
      * Draws this button to the screen.
      */
     @Override
-    public void drawButton(@Nonnull Minecraft mc, int mouseX, int mouseY, float partialTicks) {
+    public void renderButton(int mouseX, int mouseY, float wtf) {
         if (this.visible) {
-            GlStateManager.color(255, 255, 255);
-            this.hovered = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width &&
+            RenderSystem.color3f(255, 255, 255);
+            this.isHovered = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width &&
                 mouseY < this.y + this.height;
-            TexturePart texturePart = this.hovered
+            TexturePart texturePart = this.isHovered
                 ? this.textureHover
                 : this.textureNormal;
-            GlStateManager.disableDepth();
+            GlStateManager.disableDepthTest();
             texturePart.renderTo(this, this.x, this.y);
-            GlStateManager.enableDepth();
+            GlStateManager.enableDepthTest();
         }
     }
 }

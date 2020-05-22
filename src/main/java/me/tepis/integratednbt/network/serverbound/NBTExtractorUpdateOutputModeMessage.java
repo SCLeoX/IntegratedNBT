@@ -1,8 +1,8 @@
 package me.tepis.integratednbt.network.serverbound;
 
-import io.netty.buffer.ByteBuf;
 import me.tepis.integratednbt.NBTExtractorOutputMode;
 import me.tepis.integratednbt.NBTExtractorTileEntity;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.BlockPos;
 
 /**
@@ -20,11 +20,21 @@ public class NBTExtractorUpdateOutputModeMessage extends NBTExtractorUpdateServe
         ) {
             nbtExtractorTileEntity.setOutputMode(message.outputMode);
         }
+
+        @Override
+        protected Class<NBTExtractorUpdateOutputModeMessage> getMessageClass() {
+            return NBTExtractorUpdateOutputModeMessage.class;
+        }
+
+        @Override
+        protected NBTExtractorUpdateOutputModeMessage createEmpty() {
+            return new NBTExtractorUpdateOutputModeMessage();
+        }
     }
 
     private NBTExtractorOutputMode outputMode;
 
-    public NBTExtractorUpdateOutputModeMessage() {}
+    private NBTExtractorUpdateOutputModeMessage() {}
 
     public NBTExtractorUpdateOutputModeMessage(
         BlockPos blockPos,
@@ -35,13 +45,13 @@ public class NBTExtractorUpdateOutputModeMessage extends NBTExtractorUpdateServe
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    public void fromBytes(PacketBuffer buf) {
         super.fromBytes(buf);
         this.outputMode = NBTExtractorOutputMode.values()[buf.readByte()];
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    public void toBytes(PacketBuffer buf) {
         super.toBytes(buf);
         buf.writeByte(this.outputMode.ordinal());
     }

@@ -1,11 +1,9 @@
 package me.tepis.integratednbt.network.serverbound;
 
-import io.netty.buffer.ByteBuf;
 import me.tepis.integratednbt.NBTExtractorTileEntity;
 import me.tepis.integratednbt.NBTPath;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
 
 /**
  * From client to server;
@@ -22,6 +20,16 @@ public class NBTExtractorUpdateExtractionPathMessage extends NBTExtractorUpdateS
             nbtExtractorTileEntity.setExtractionPath(message.path);
             nbtExtractorTileEntity.setDefaultNBTId(message.defaultNBTId);
         }
+
+        @Override
+        protected Class<NBTExtractorUpdateExtractionPathMessage> getMessageClass() {
+            return NBTExtractorUpdateExtractionPathMessage.class;
+        }
+
+        @Override
+        protected NBTExtractorUpdateExtractionPathMessage createEmpty() {
+            return new NBTExtractorUpdateExtractionPathMessage();
+        }
     }
 
     private NBTPath path;
@@ -37,22 +45,19 @@ public class NBTExtractorUpdateExtractionPathMessage extends NBTExtractorUpdateS
         this.defaultNBTId = defaultNBTId;
     }
 
-    public NBTExtractorUpdateExtractionPathMessage() {}
+    private NBTExtractorUpdateExtractionPathMessage() {}
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    public void fromBytes(PacketBuffer buf) {
         super.fromBytes(buf);
-        NBTTagCompound data = ByteBufUtils.readTag(buf);
-        this.path = data == null
-            ? new NBTPath()
-            : NBTPath.fromNBT(data.getTag("path")).orElse(new NBTPath());
+        this.path = NBTPath.fromNBT(buf.readCompoundTag()).orElse(new NBTPath());
         this.defaultNBTId = buf.readByte();
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    public void toBytes(PacketBuffer buf) {
         super.toBytes(buf);
-        ByteBufUtils.writeTag(buf, this.path.toNBTCompound());
+        buf.writeCompoundTag(this.path.toNBTCompound());
         buf.writeByte(this.defaultNBTId);
     }
 }

@@ -1,184 +1,170 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.block.BlockHorizontal;
-import net.minecraft.block.SoundType;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.properties.PropertyDirection;
-import net.minecraft.block.state.BlockStateContainer;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.resources.I18n;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryHelper;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
+import net.minecraft.state.StateContainer;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
+import net.minecraft.util.ActionResultType;
+import net.minecraft.util.Direction;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Mirror;
+import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.BlockRayTraceResult;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
-import org.cyclops.commoncapabilities.api.capability.wrench.WrenchTarget;
-import org.cyclops.integrateddynamics.Capabilities;
+import net.minecraftforge.fml.network.NetworkHooks;
+import org.cyclops.integrateddynamics.core.helper.WrenchHelpers;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Objects;
 
-public class NBTExtractor extends CabledBlock {
-    private class NBTExtractorItem extends ItemBlock {
-        public NBTExtractorItem() {
-            super(NBTExtractor.this);
-            this.setRegistryName(REGISTRY_NAME);
+import static me.tepis.integratednbt.Additions.NBT_EXTRACTOR_BLOCK;
+
+public class NBTExtractor extends CabledHorizontalBlock {
+    public static class NBTExtractorBlockItem extends BlockItem {
+        public NBTExtractorBlockItem() {
+            super(NBT_EXTRACTOR_BLOCK.get(), new Item.Properties().group(ItemGroups.ITEM_GROUP));
         }
 
         @Override
         public void addInformation(
             @Nonnull ItemStack itemStack,
             @Nullable World world,
-            @Nonnull List<String> tooltip,
+            @Nonnull List<ITextComponent> tooltip,
             @Nonnull ITooltipFlag flag
         ) {
             super.addInformation(itemStack, world, tooltip, flag);
-            tooltip.add(I18n.format("integratednbt:nbt_extractor.tooltip"));
+            tooltip.add(new TranslationTextComponent("integratednbt:nbt_extractor.tooltip"));
         }
     }
 
-    public static final String REGISTRY_NAME = "integratednbt:nbt_extractor";
-    public static final String TRANSLATION_KEY = "tile." + REGISTRY_NAME + ".name";
-    private static final PropertyDirection FACING = BlockHorizontal.FACING;
-    private static NBTExtractor instance;
-    private Item itemBlock = new NBTExtractorItem();
+    public static final String REGISTRY_NAME = "nbt_extractor";
 
-    private NBTExtractor() {
-        super(Material.ANVIL);
-        this.setDefaultState(this.blockState.getBaseState().withProperty(FACING, EnumFacing.NORTH));
-        this.setCreativeTab(IntegratedNBTCreativeTab.getInstance());
-        this.setRegistryName(REGISTRY_NAME);
-        this.setTranslationKey(REGISTRY_NAME);
-        this.setHardness(5.0F);
-        this.setSoundType(SoundType.METAL);
-    }
-
-    public static NBTExtractor getInstance() {
-        if (instance == null) {
-            instance = new NBTExtractor();
-        }
-        return instance;
+    public NBTExtractor(Properties properties) {
+        super(properties);
+        this.setDefaultState(this.getDefaultState().with(HORIZONTAL_FACING, Direction.NORTH));
     }
 
     @Override
-    public void breakBlock(
-        @Nonnull World world,
-        @Nonnull BlockPos blockPos,
-        @Nonnull IBlockState state
+    protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder) {
+        super.fillStateContainer(builder);
+        builder.add(HORIZONTAL_FACING);
+    }
+
+    @Override
+    public void onReplaced(
+        BlockState oldState,
+        @Nonnull World worldIn,
+        @Nonnull BlockPos pos,
+        BlockState newState,
+        boolean isMoving
     ) {
-        TileEntity tileentity = world.getTileEntity(blockPos);
-        if (tileentity instanceof NBTExtractorTileEntity) {
-            InventoryHelper.dropInventoryItems(
-                world,
-                blockPos,
-                (NBTExtractorTileEntity) tileentity
-            );
+        if (oldState.getBlock() != newState.getBlock()) {
+            TileEntity tileEntity = worldIn.getTileEntity(pos);
+            if (tileEntity instanceof NBTExtractorTileEntity) {
+                IInventory inventory = (NBTExtractorTileEntity) tileEntity;
+                for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
+                    InventoryHelper.spawnItemStack(
+                        worldIn,
+                        pos.getX(),
+                        pos.getY(),
+                        pos.getZ(),
+                        inventory.getStackInSlot(slot)
+                    );
+                }
+            }
         }
-        super.breakBlock(world, blockPos, state);
+        super.onReplaced(oldState, worldIn, pos, newState, isMoving);
     }
 
     @Override
-    @Nonnull
-    protected BlockStateContainer createBlockState() {
-        return new BlockStateContainer(this, FACING);
+    public boolean hasTileEntity(BlockState state) {
+        return true;
     }
 
     @Override
-    public int getMetaFromState(IBlockState state) {
-        return state.getValue(FACING).getHorizontalIndex();
+    public TileEntity createTileEntity(@Nonnull BlockState state, @Nonnull IBlockReader world) {
+        return new NBTExtractorTileEntity();
+    }
+
+    @Override
+    public BlockState getStateForPlacement(BlockItemUseContext context) {
+        return this.getDefaultState()
+            .with(HORIZONTAL_FACING, context.getPlacementHorizontalFacing().getOpposite());
     }
 
     @Override
     @Nonnull
     @SuppressWarnings("deprecation")
-    public IBlockState getStateFromMeta(int meta) {
-        return this.getDefaultState().withProperty(FACING, EnumFacing.byHorizontalIndex(meta));
-    }
-
-    @Override
-    public boolean hasTileEntity(IBlockState state) {
-        return true;
-    }
-
-    @Override
-    public TileEntity createTileEntity(@Nonnull World world, @Nonnull IBlockState state) {
-        return new NBTExtractorTileEntity();
-    }
-
-    public Item getItemBlock() {
-        return this.itemBlock;
-    }
-
-    @Override
-    public void onBlockPlacedBy(
+    public ActionResultType onBlockActivated(
+        BlockState blockState,
         World world,
-        BlockPos pos,
-        IBlockState state,
-        EntityLivingBase placer,
-        ItemStack itemStack
-    ) {
-        world.setBlockState(pos, state.withProperty(
-            FACING,
-            placer.getHorizontalFacing().getOpposite()
-        ), 2);
-        super.onBlockPlacedBy(world, pos, state, placer, itemStack);
-    }
-
-    @Override
-    public boolean onBlockActivated(
-        World world,
-        BlockPos pos,
-        IBlockState state,
-        EntityPlayer player,
-        EnumHand hand,
-        EnumFacing side,
-        float hitX,
-        float hitY,
-        float hitZ
+        BlockPos blockPos,
+        PlayerEntity player,
+        Hand hand,
+        BlockRayTraceResult rayTraceResult
     ) {
         ItemStack heldItem = player.getHeldItem(hand);
         if (!world.isRemote) {
-            EntityPlayerMP playerMP = (EntityPlayerMP) player;
-            if (heldItem.hasCapability(me.tepis.integratednbt.Capabilities.WRENCH_CAPABILITY, null)
-                && Objects.requireNonNull(heldItem.getCapability(Capabilities.WRENCH, null))
-                .canUse(player, WrenchTarget.forBlock(world, pos, side)) && player.isSneaking()
+            ServerPlayerEntity playerMP = (ServerPlayerEntity) player;
+            if (WrenchHelpers.isWrench(player, heldItem, world, blockPos, rayTraceResult.getFace())
+                && player.isCrouching()
             ) {
-                this.destroyBlock(world, pos, true);
-                return true;
+                Block.spawnDrops(
+                    blockState,
+                    world,
+                    blockPos,
+                    blockState.hasTileEntity() ? world.getTileEntity(blockPos) : null,
+                    player,
+                    heldItem
+                );
+                world.destroyBlock(blockPos, false);
+                return ActionResultType.SUCCESS;
             }
-            if (heldItem.getItem() == NBTExtractorRemote.getInstance()) {
-                return false;
+            if (heldItem.getItem() == Additions.NBT_EXTRACTOR_REMOTE.get()) {
+                return ActionResultType.FAIL;
             }
-            if (!player.isSneaking()) {
-                this.playerAccess(world, pos, playerMP);
+            if (!player.isCrouching()) {
+                this.playerAccess(world, blockPos, playerMP);
+                return ActionResultType.SUCCESS;
             }
         }
-        return true;
+        return super.onBlockActivated(blockState, world, blockPos, player, hand, rayTraceResult);
     }
 
-    public void playerAccess(World world, BlockPos pos, EntityPlayerMP playerMP) {
+    public void playerAccess(World world, BlockPos pos, ServerPlayerEntity playerMP) {
         TileEntity tileentity = world.getTileEntity(pos);
         if (tileentity instanceof NBTExtractorTileEntity) {
             NBTExtractorTileEntity nbtExtractorTileEntity = (NBTExtractorTileEntity) tileentity;
             nbtExtractorTileEntity.refreshVariables(true);
-            playerMP.openGui(
-                IntegratedNBT.getInstance(),
-                0,
-                world,
-                pos.getX(),
-                pos.getY(),
-                pos.getZ()
-            );
+            NetworkHooks.openGui(playerMP, nbtExtractorTileEntity, pos);
         }
+    }
+
+    @Override
+    @Nonnull
+    @SuppressWarnings("deprecation")
+    public BlockState rotate(BlockState state, Rotation rot) {
+        return state.with(HORIZONTAL_FACING, rot.rotate(state.get(HORIZONTAL_FACING)));
+    }
+
+    @Override
+    @Nonnull
+    @SuppressWarnings("deprecation")
+    public BlockState mirror(BlockState state, Mirror mirrorIn) {
+        return state.rotate(mirrorIn.toRotation(state.get(HORIZONTAL_FACING)));
     }
 }
