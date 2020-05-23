@@ -147,7 +147,9 @@ public class NBTExtractorUpdateClientMessage implements Message {
         buf.writeByte(this.updated);
         if (this.isUpdated(MASK_NBT)) {
             CompoundNBT compound = new CompoundNBT();
-            compound.put("nbt", this.nbt);
+            if (this.nbt != null) {
+                compound.put("nbt", this.nbt);
+            }
             buf.writeCompoundTag(compound);
         }
         if (this.isUpdated(MASK_ERROR_CODE)) {

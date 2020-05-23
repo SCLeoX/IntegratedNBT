@@ -35,4 +35,8 @@ public class Wrapper<T> {
     public int hashCode() {
         return this.value != null ? this.value.hashCode() : 0;
     }
+
+    public static <T> Wrapper<T> of(T value) {
+        return new Wrapper<>(value);
+    }
 }

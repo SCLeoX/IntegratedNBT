@@ -283,8 +283,9 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     private byte defaultNBTId = 1;
     private NBTExtractorOutputMode outputMode = NBTExtractorOutputMode.REFERENCE;
     private INBT lastEvaluatedNBT = null;
+    // If null, then there is no frozen value available
+    private Wrapper<INBT> frozenNBT = null;
     private boolean autoRefresh = true;
-    private INBT frozenNBT = null;
     /**
      * The item stack that yielded the current frozen NBT
      */
@@ -379,7 +380,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     public void updateLastEvaluatedNBT(INBT lastEvaluatedNBT) {
         this.lastEvaluatedNBT = lastEvaluatedNBT;
         if (!this.autoRefresh && this.frozenNBT == null) {
-            this.frozenNBT = this.lastEvaluatedNBT;
+            this.frozenNBT = Wrapper.of(this.lastEvaluatedNBT);
             this.frozenNBTItemStack = this.getStackInSlot(SRC_NBT_SLOT).copy();
         }
     }
@@ -518,7 +519,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         return Integration.isVariable(stack);
     }
 
-    public INBT getFrozenValue() {
+    public Wrapper<INBT> getFrozenValue() {
         if (this.autoRefresh) {
             return null;
         } else {
@@ -570,8 +571,21 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         tag.putByte("outputMode", (byte) this.outputMode.ordinal());
         tag.putBoolean("isAutoRefresh", this.autoRefresh);
         if (!this.autoRefresh) {
+            // frozenNBT = null:
+            // { ... }
+            //
+            // frozenNBT = Wrapper.of(null):
+            // { ..., frozenNBT: {} }
+            //
+            // frozenNBT = Wrapper.of(something):
+            // {..., frozenNBT: { value: something } }
+
             if (this.frozenNBT != null) {
-                tag.put("frozenNBT", this.frozenNBT);
+                CompoundNBT compound = new CompoundNBT();
+                if (this.frozenNBT.get() != null) {
+                    compound.put("value", this.frozenNBT.get());
+                }
+                tag.put("frozenNBT", compound);
             }
             tag.put(
                 "frozenNBTItemStack",
@@ -607,7 +621,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
             this.autoRefresh = tag.getBoolean("isAutoRefresh");
             if (!this.autoRefresh) {
                 if (tag.contains("frozenNBT")) {
-                    this.frozenNBT = tag.getCompound("frozenNBT");
+                    this.frozenNBT = Wrapper.of(tag.getCompound("frozenNBT").get("value"));
                 }
                 this.frozenNBTItemStack = ItemStack.read(tag.getCompound("frozenNBTItemStack"));
             }
@@ -657,7 +671,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
                 },
                 this.itemStacks.get(VAR_OUT_SLOT),
                 (!this.autoRefresh && this.frozenNBT != null)
-                    ? this.frozenNBT
+                    ? this.frozenNBT.get()
                     : this.lastEvaluatedNBT,
                 this.extractionPath,
                 this.defaultNBTId,

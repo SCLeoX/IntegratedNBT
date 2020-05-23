@@ -24,7 +24,6 @@ import org.cyclops.integrateddynamics.api.evaluate.variable.IVariable;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeNbt.ValueNbt;
 
 import javax.annotation.Nonnull;
-import java.lang.reflect.Field;
 import java.util.Objects;
 
 
@@ -83,7 +82,7 @@ public class NBTExtractorContainer extends Container {
     private PlayerInventory playerInventory;
     private NBTExtractorTileEntity nbtExtractorEntity;
     private ErrorCode clientErrorCode = null;
-    private INBT clientNBT = null;
+    private Wrapper<INBT> clientNBT = null;
     private NBTPath clientPath = null;
     private NBTExtractorOutputMode clientOutputMode = null;
     private ITextComponent clientErrorMessage = null;
@@ -147,14 +146,14 @@ public class NBTExtractorContainer extends Container {
         World world = this.nbtExtractorEntity.getWorld();
         if (world != null && !world.isRemote) {
             ErrorCode errorCode;
-            INBT nbt = this.clientNBT;
+            Wrapper<INBT> newNBT = this.clientNBT;
             ITextComponent errorMessage = null;
             if (!this.getSlot(SRC_NBT).getHasStack()) {
                 // Client will do this automatically
                 errorCode = this.clientErrorCode = null;
             } else {
                 try {
-                    INBT frozenValue = this.nbtExtractorEntity.getFrozenValue();
+                    Wrapper<INBT> frozenValue = this.nbtExtractorEntity.getFrozenValue();
                     if (frozenValue == null) {
                         // If there is no frozen value (either frozen mode is not on, or it is
                         // on, but a value has not been evaluated yet.)
@@ -165,7 +164,7 @@ public class NBTExtractorContainer extends Container {
                         } else {
                             IValue value = variable.getValue();
                             if (value instanceof ValueNbt) {
-                                nbt = ((ValueNbt) value).getRawValue().orElse(null);
+                                newNBT = Wrapper.of(((ValueNbt) value).getRawValue().orElse(null));
                                 errorCode = ErrorCode.NO_ERROR;
                             } else {
                                 errorCode = ErrorCode.TYPE_ERROR;
@@ -173,7 +172,7 @@ public class NBTExtractorContainer extends Container {
                         }
                     } else {
                         errorCode = ErrorCode.NO_ERROR;
-                        nbt = frozenValue;
+                        newNBT = frozenValue;
                     }
                 } catch (EvaluationException | PartStateException exception) {
                     exception.printStackTrace();
@@ -188,9 +187,9 @@ public class NBTExtractorContainer extends Container {
                 }
             }
             NBTExtractorUpdateClientMessage message = new NBTExtractorUpdateClientMessage();
-            if (!Objects.equals(this.clientNBT, nbt)) {
-                message.updateNBT(nbt);
-                this.clientNBT = nbt;
+            if (!Objects.equals(this.clientNBT, newNBT)) {
+                message.updateNBT(newNBT.get());
+                this.clientNBT = newNBT;
             }
             if (this.clientErrorCode != errorCode) {
                 message.updateErrorCode(errorCode);
@@ -220,7 +219,7 @@ public class NBTExtractorContainer extends Container {
                 PacketHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> playerMP), message);
             }
             if (errorCode == ErrorCode.NO_ERROR) {
-                this.nbtExtractorEntity.updateLastEvaluatedNBT(nbt);
+                this.nbtExtractorEntity.updateLastEvaluatedNBT(newNBT.get());
             } else {
                 this.nbtExtractorEntity.updateLastEvaluatedNBT(null);
             }
