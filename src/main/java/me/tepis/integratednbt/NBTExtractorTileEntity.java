@@ -701,7 +701,9 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         tag.setByte("outputMode", (byte) this.outputMode.ordinal());
         tag.setBoolean("isAutoRefresh", this.autoRefresh);
         if (!this.autoRefresh) {
-            tag.setTag("frozenNBT", this.frozenNBT);
+            if (this.frozenNBT != null) {
+                tag.setTag("frozenNBT", this.frozenNBT);
+            }
             tag.setTag(
                 "frozenNBTItemStack",
                 this.frozenNBTItemStack.writeToNBT(new NBTTagCompound())
@@ -742,7 +744,9 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         if (tag.hasKey("isAutoRefresh")) {
             this.autoRefresh = tag.getBoolean("isAutoRefresh");
             if (!this.autoRefresh) {
-                this.frozenNBT = tag.getCompoundTag("frozenNBT");
+                if (tag.hasKey("frozenNBT")) {
+                    this.frozenNBT = tag.getCompoundTag("frozenNBT");
+                }
                 this.frozenNBTItemStack = new ItemStack(tag.getCompoundTag("frozenNBTItemStack"));
             }
         }

@@ -149,7 +149,7 @@ public class NBTPath {
             }
             myAssert(nbtBase instanceof NBTTagList);
             NBTTagList list = (NBTTagList) nbtBase;
-            myAssert(list.getTagType() == 10); /* Compound */
+            myAssert(list.getTagType() == 10 || list.tagCount() == 0); /* Compound */
             myAssert(list.tagCount() <= MAX_EXTRACTION_DEPTH);
             ArrayList<Segment> segments = new ArrayList<>(list.tagCount());
             for (NBTBase item : list) {
