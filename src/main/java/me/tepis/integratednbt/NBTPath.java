@@ -135,30 +135,37 @@ public class NBTPath {
         this.segments = new ArrayList<>();
     }
 
+    private static void myAssert(boolean value) {
+        // Apparently Java assert doesn't work :(
+        if (!value) {
+            throw new RuntimeException("Assertion failed. D:");
+        }
+    }
+
     public static Optional<NBTPath> fromNBT(NBTBase nbtBase) {
         try {
             if (nbtBase instanceof NBTTagCompound) {
                 nbtBase = ((NBTTagCompound) nbtBase).getTag(KEY_PATH);
             }
-            assert nbtBase instanceof NBTTagList;
+            myAssert(nbtBase instanceof NBTTagList);
             NBTTagList list = (NBTTagList) nbtBase;
-            assert list.getTagType() != 10; /* Compound */
-            assert list.tagCount() <= MAX_EXTRACTION_DEPTH;
+            myAssert(list.getTagType() == 10); /* Compound */
+            myAssert(list.tagCount() <= MAX_EXTRACTION_DEPTH);
             ArrayList<Segment> segments = new ArrayList<>(list.tagCount());
             for (NBTBase item : list) {
                 NBTTagCompound compound = (NBTTagCompound) item;
                 String type = compound.getString(KEY_TYPE);
-                assert !type.isEmpty();
+                myAssert(!type.isEmpty());
                 if (type.equals(TYPE_KEY)) {
-                    assert compound.hasKey(KEY_KEY);
+                    myAssert(compound.hasKey(KEY_KEY));
                     String key = compound.getString(KEY_KEY);
-                    assert !key.isEmpty();
+                    myAssert(!key.isEmpty());
                     segments.add(new KeySegment(key));
                 } else {
-                    assert type.equals(TYPE_INDEX);
-                    assert compound.hasKey(KEY_INDEX);
+                    myAssert(type.equals(TYPE_INDEX));
+                    myAssert(compound.hasKey(KEY_INDEX));
                     int index = compound.getInteger(KEY_INDEX);
-                    assert index >= 0;
+                    myAssert(index >= 0);
                     segments.add(new IndexSegment(index));
                 }
             }
