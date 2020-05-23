@@ -570,7 +570,9 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         tag.putByte("outputMode", (byte) this.outputMode.ordinal());
         tag.putBoolean("isAutoRefresh", this.autoRefresh);
         if (!this.autoRefresh) {
-            tag.put("frozenNBT", this.frozenNBT);
+            if (this.frozenNBT != null) {
+                tag.put("frozenNBT", this.frozenNBT);
+            }
             tag.put(
                 "frozenNBTItemStack",
                 this.frozenNBTItemStack.write(new CompoundNBT())
@@ -604,7 +606,9 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         if (tag.contains("isAutoRefresh")) {
             this.autoRefresh = tag.getBoolean("isAutoRefresh");
             if (!this.autoRefresh) {
-                this.frozenNBT = tag.getCompound("frozenNBT");
+                if (tag.contains("frozenNBT")) {
+                    this.frozenNBT = tag.getCompound("frozenNBT");
+                }
                 this.frozenNBTItemStack = ItemStack.read(tag.getCompound("frozenNBTItemStack"));
             }
         }
@@ -646,115 +650,22 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
 
     private void updateOutVariable() {
         if (!this.itemStacks.get(VAR_OUT_SLOT).isEmpty()) {
-            ItemStack result = null;
-            switch (this.outputMode) {
-                case REFERENCE:
-                    result = this.getVariableByReferenceMode();
-                    break;
-                case OPERATOR:
-                    result = this.getVariableByOperatorMode();
-                    break;
-                case VALUE:
-                    result = this.getVariableByValueMode();
-                    break;
-            }
+            ItemStack result = this.outputMode.writeItemStack(
+                () -> {
+                    this.refreshVariables(true);
+                    return this.evaluator.getVariableFacade();
+                },
+                this.itemStacks.get(VAR_OUT_SLOT),
+                (!this.autoRefresh && this.frozenNBT != null)
+                    ? this.frozenNBT
+                    : this.lastEvaluatedNBT,
+                this.extractionPath,
+                this.defaultNBTId,
+                this.getBlockState()
+            );
             if (result != null) {
                 this.itemStacks.set(VAR_OUT_SLOT, result);
             }
         }
-    }
-
-    @Nullable
-    private ItemStack getVariableByReferenceMode() {
-        this.refreshVariables(true);
-        IVariableFacadeHandlerRegistry registry =
-            IntegratedDynamics._instance.getRegistryManager()
-                .getRegistry(IVariableFacadeHandlerRegistry.class);
-        IVariableFacade variableFacade =
-            NBTExtractorTileEntity.this.evaluator.getVariableFacade();
-        if (variableFacade != null) {
-            int sourceNBTId = variableFacade.getId();
-            IVariableFacadeFactory<NBTExtractedVariableFacade> factory =
-                new IVariableFacadeFactory<NBTExtractedVariableFacade>() {
-                    @Override
-                    public NBTExtractedVariableFacade create(boolean generateId) {
-                        return new NBTExtractedVariableFacade(
-                            generateId,
-                            sourceNBTId,
-                            NBTExtractorTileEntity.this.extractionPath,
-                            NBTExtractorTileEntity.this.defaultNBTId
-                        );
-                    }
-
-                    @Override
-                    public NBTExtractedVariableFacade create(int id) {
-                        return new NBTExtractedVariableFacade(
-                            id,
-                            sourceNBTId,
-                            NBTExtractorTileEntity.this.extractionPath,
-                            NBTExtractorTileEntity.this.defaultNBTId
-                        );
-                    }
-                };
-            return registry.writeVariableFacadeItem(
-                true,
-                this.itemStacks.get(VAR_OUT_SLOT),
-                NBTExtractedVariableFacadeHandler.getInstance(),
-                factory,
-                null,
-                this.getBlockState()
-            );
-        } else {
-            return null;
-        }
-    }
-
-    @Nullable
-    private ItemStack getVariableByOperatorMode() {
-        return this.getVariableUsingValue(ValueOperator.of(new NBTExtractionOperator(
-            this.extractionPath,
-            this.defaultNBTId
-        )));
-    }
-
-    @Nullable
-    private ItemStack getVariableByValueMode() {
-        this.refreshVariables(true);
-        INBT extractedNBT = this.extractionPath.extract(
-            (!this.autoRefresh && this.frozenNBT != null)
-                ? this.frozenNBT
-                : this.lastEvaluatedNBT);
-        IValue value = extractedNBT == null
-            ? NBTValueConverter.getDefaultValue(this.defaultNBTId)
-            : NBTValueConverter.mapNBTToValue(extractedNBT);
-        return this.getVariableUsingValue(value);
-    }
-
-    @Nullable
-    @SuppressWarnings( {"rawtypes", "unchecked"})
-    private ItemStack getVariableUsingValue(IValue value) {
-        IVariableFacadeHandlerRegistry registry = IntegratedDynamics._instance.getRegistryManager()
-            .getRegistry(IVariableFacadeHandlerRegistry.class);
-        if (value == null) {
-            return null;
-        }
-        return registry.writeVariableFacadeItem(
-            true,
-            this.itemStacks.get(VAR_OUT_SLOT),
-            ValueTypes.REGISTRY,
-            new IVariableFacadeHandlerRegistry.IVariableFacadeFactory<IValueTypeVariableFacade>() {
-                @Override
-                public IValueTypeVariableFacade create(boolean generateId) {
-                    return new ValueTypeVariableFacade(generateId, value.getType(), value);
-                }
-
-                @Override
-                public IValueTypeVariableFacade create(int id) {
-                    return new ValueTypeVariableFacade(id, value.getType(), value);
-                }
-            },
-            null,
-            this.getBlockState()
-        );
     }
 }

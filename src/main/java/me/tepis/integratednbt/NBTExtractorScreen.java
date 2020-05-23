@@ -13,6 +13,10 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.nbt.INBT;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.Style;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.PacketDistributor;
@@ -56,42 +60,6 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
     );
     private static final TexturePart BUTTON_UNKNOWN_HOVER = GUI_TEXTURE.createPart(
         78,
-        12,
-        BUTTON_SIZE,
-        BUTTON_SIZE
-    );
-    private static final TexturePart BUTTON_REFERENCE_MODE = GUI_TEXTURE.createPart(
-        90,
-        0,
-        BUTTON_SIZE,
-        BUTTON_SIZE
-    );
-    private static final TexturePart BUTTON_REFERENCE_MODE_HOVER = GUI_TEXTURE.createPart(
-        90,
-        12,
-        BUTTON_SIZE,
-        BUTTON_SIZE
-    );
-    private static final TexturePart BUTTON_OPERATOR_MODE = GUI_TEXTURE.createPart(
-        102,
-        0,
-        BUTTON_SIZE,
-        BUTTON_SIZE
-    );
-    private static final TexturePart BUTTON_OPERATOR_MODE_HOVER = GUI_TEXTURE.createPart(
-        102,
-        12,
-        BUTTON_SIZE,
-        BUTTON_SIZE
-    );
-    private static final TexturePart BUTTON_VALUE_MODE = GUI_TEXTURE.createPart(
-        114,
-        0,
-        BUTTON_SIZE,
-        BUTTON_SIZE
-    );
-    private static final TexturePart BUTTON_VALUE_MODE_HOVER = GUI_TEXTURE.createPart(
-        114,
         12,
         BUTTON_SIZE,
         BUTTON_SIZE
@@ -217,46 +185,39 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         if (this.outputModeButton == null) {
             return;
         }
-        ArrayList<String> messages = new ArrayList<>();
+        ArrayList<ITextComponent> messages = new ArrayList<>();
         if (outputMode == null) {
             this.outputModeButton.setTexture(
                 BUTTON_UNKNOWN,
                 BUTTON_UNKNOWN_HOVER
             );
-            messages.add(I18n.format(
+            messages.add(new TranslationTextComponent(
                 "integratednbt:nbt_extractor.output_mode",
-                I18n.format("integratednbt:nbt_extractor.loading")
-            ));
-        } else if (outputMode == NBTExtractorOutputMode.REFERENCE) {
-            this.outputModeButton.setTexture(
-                BUTTON_REFERENCE_MODE,
-                BUTTON_REFERENCE_MODE_HOVER
-            );
-            messages.add(I18n.format(
-                "integratednbt:nbt_extractor.output_mode",
-                I18n.format("integratednbt:nbt_extractor.output_mode.reference")
-            ));
-        } else if (outputMode == NBTExtractorOutputMode.OPERATOR) {
-            this.outputModeButton.setTexture(
-                BUTTON_OPERATOR_MODE,
-                BUTTON_OPERATOR_MODE_HOVER
-            );
-            messages.add(I18n.format(
-                "integratednbt:nbt_extractor.output_mode",
-                I18n.format("integratednbt:nbt_extractor.output_mode.operator")
+                new TranslationTextComponent("integratednbt:nbt_extractor.loading")
             ));
         } else {
             this.outputModeButton.setTexture(
-                BUTTON_VALUE_MODE,
-                BUTTON_VALUE_MODE_HOVER
+                outputMode.getButtonTextureNormal(),
+                outputMode.getButtonTextureHover()
             );
-            messages.add(I18n.format(
+            messages.add(new TranslationTextComponent(
                 "integratednbt:nbt_extractor.output_mode",
-                I18n.format("integratednbt:nbt_extractor.output_mode.value")
+                outputMode.getName().getFormattedText()
             ));
         }
-        messages.addAll(Arrays.asList(I18n.format(
-            "integratednbt:nbt_extractor.output_mode.description").split("\\\\n")));
+        messages.add(new TranslationTextComponent(
+            "integratednbt:nbt_extractor.output_mode.description.begin").setStyle(new Style().setColor(
+            TextFormatting.GRAY)));
+        messages.add(new StringTextComponent(""));
+        Arrays.stream(NBTExtractorOutputMode.values())
+            .forEach(describingOutputMode -> messages.add(describingOutputMode.getDescription(
+                describingOutputMode.equals(outputMode))));
+        messages.add(new StringTextComponent(""));
+        messages.add(new TranslationTextComponent(
+            "integratednbt:nbt_extractor.output_mode.description.end",
+            NBTExtractorOutputMode.REFERENCE.getName()
+        ).setStyle(new Style().setColor(
+            TextFormatting.GRAY)));
         this.outputModeButton.setHoverText(messages);
     }
 
@@ -306,7 +267,7 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         }
         messages.addAll(Arrays.asList(I18n.format(
             "integratednbt:nbt_extractor.auto_refresh.description").split("\\\\n")));
-        this.autoRefreshButton.setHoverText(messages);
+        this.autoRefreshButton.setHoverTextRaw(messages);
     }
 
     @Override
