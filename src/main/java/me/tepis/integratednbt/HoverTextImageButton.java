@@ -53,7 +53,7 @@ public class HoverTextImageButton extends ImageButton {
                 mouseY,
                 this.gui.width,
                 this.gui.height,
-                200,
+                240,
                 SensibleFontRenderer.get()
             );
         }
