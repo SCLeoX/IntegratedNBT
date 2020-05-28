@@ -208,9 +208,6 @@ public abstract class NBTTreeViewer {
     }
 
     public void render(INBT nbt, int absMouseX, int absMouseY) {
-        if (nbt == null) {
-            return;
-        }
         this.hoveringPath = null;
         this.hoveringNBTNode = null;
         this.hoveringExpandableButton = null;
@@ -222,7 +219,16 @@ public abstract class NBTTreeViewer {
         glPushMatrix();
         try {
             glTranslated(this.left, this.top - this.renderScroll, 0);
-            this.renderNode(I18n.format("integratednbt:nbt_extractor.root"), nbt);
+            if (nbt == null) {
+                this.fontRenderer.drawString(
+                    I18n.format("integratednbt:nbt_extractor.empty"),
+                    SCREEN_EDGE,
+                    this.currentY,
+                    EMPTY_COLOR
+                );
+            } else {
+                this.renderNode(I18n.format("integratednbt:nbt_extractor.root"), nbt);
+            }
             int totalHeight = this.currentY + SCREEN_EDGE;
             glTranslated(0, this.renderScroll, 0);
             this.maxScroll = Math.max(totalHeight - this.height, 0);
