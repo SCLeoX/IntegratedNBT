@@ -15,6 +15,7 @@ import org.cyclops.integrateddynamics.api.item.IVariableFacade;
 import org.cyclops.integrateddynamics.api.item.IVariableFacadeHandlerRegistry;
 import org.cyclops.integrateddynamics.api.item.IVariableFacadeHandlerRegistry.IVariableFacadeFactory;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeOperator.ValueOperator;
+import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeString.ValueString;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypes;
 import org.cyclops.integrateddynamics.core.item.ValueTypeVariableFacade;
 
@@ -120,6 +121,28 @@ public enum NBTExtractorOutputMode {
                 ? NBTValueConverter.getDefaultValue(defaultNBTId)
                 : NBTValueConverter.mapNBTToValue(extractedNBT);
             return getVariableUsingValue(value, outputVariableItemStack, blockState);
+        }
+    },
+    NBT_PATH(
+        "nbt_path",
+        TextFormatting.RED,
+        Nest.GUI_TEXTURE.createPart(150, 0, Nest.BUTTON_SIZE, Nest.BUTTON_SIZE),
+        Nest.GUI_TEXTURE.createPart(150, 12, Nest.BUTTON_SIZE, Nest.BUTTON_SIZE)
+    ) {
+        @Override
+        public ItemStack writeItemStack(
+            Supplier<IVariableFacade> sourceVariableFacadeSupplier,
+            ItemStack outputVariableItemStack,
+            INBT currentNBT,
+            NBTPath extractionPath,
+            byte defaultNBTId,
+            BlockState blockState
+        ) {
+            return getVariableUsingValue(
+                ValueString.of(extractionPath.getCyclopsNBTPath()),
+                outputVariableItemStack,
+                blockState
+            );
         }
     };
 

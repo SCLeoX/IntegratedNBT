@@ -7,6 +7,7 @@ import net.minecraft.nbt.ListNBT;
 
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class NBTPath {
@@ -16,10 +17,13 @@ public class NBTPath {
         String getCompactDisplayText();
 
         INBT access(INBT parent);
+
+        void buildCyclopsNBTPath(StringBuilder stringBuilder);
     }
 
     private static class KeySegment implements Segment {
         private final String key;
+        private static final Pattern NON_SPECIAL = Pattern.compile("^[a-zA-Z_0-9]+$");
 
         public KeySegment(String key) {
             this.key = key;
@@ -60,6 +64,17 @@ public class NBTPath {
                 return ((CompoundNBT) parent).get(this.key);
             } else {
                 return null;
+            }
+        }
+
+        @Override
+        public void buildCyclopsNBTPath(StringBuilder stringBuilder) {
+            // .length is reserved in Cyclops NBT Path
+            if (NON_SPECIAL.matcher(this.key).matches() && !this.key.equals("length")) {
+                stringBuilder.append('.').append(this.key);
+            } else {
+                // Cyclops NBT Path currently does not support escaping
+                stringBuilder.append("[\"").append(this.key).append("\"]");
             }
         }
     }
@@ -116,6 +131,11 @@ public class NBTPath {
             } else {
                 return null;
             }
+        }
+
+        @Override
+        public void buildCyclopsNBTPath(StringBuilder stringBuilder) {
+            stringBuilder.append("[").append(this.index).append("]");
         }
     }
 
@@ -274,5 +294,13 @@ public class NBTPath {
 
     public int getDepth() {
         return this.segments.size();
+    }
+
+    public String getCyclopsNBTPath() {
+        StringBuilder stringBuilder = new StringBuilder().append('$');
+        for (Segment segment : this.segments) {
+            segment.buildCyclopsNBTPath(stringBuilder);
+        }
+        return stringBuilder.toString();
     }
 }
