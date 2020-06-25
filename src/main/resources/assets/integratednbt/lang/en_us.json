@@ -28,7 +28,7 @@
   "integratednbt:nbt_extractor.output_mode.reference.name": "Reference Mode",
   "integratednbt:nbt_extractor.output_mode.reference.description": "- In %s, output values are being created with a reference to the source NBT variable.",
   "integratednbt:nbt_extractor.output_mode.operator.name": "Operator Mode",
-  "integratednbt:nbt_extractor.output_mode.operator.description": "- In %s, the extraction process is encoded into an operator that accepts NBT and returns the extracted value is created from the extraction process.",
+  "integratednbt:nbt_extractor.output_mode.operator.description": "- In %s, the extraction process is encoded into an operator that accepts NBT and returns the extracted value.",
   "integratednbt:nbt_extractor.output_mode.value.name": "Value Mode",
   "integratednbt:nbt_extractor.output_mode.value.description": "- In %s, the value present is written to the output variable as a constant.",
   "integratednbt:nbt_extractor.output_mode.nbt_path.name": "NBT Path Mode",

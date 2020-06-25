@@ -4,6 +4,7 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -74,7 +75,13 @@ public class NBTPath {
                 stringBuilder.append('.').append(this.key);
             } else {
                 // Cyclops NBT Path currently does not support escaping
-                stringBuilder.append("[\"").append(this.key).append("\"]");
+                stringBuilder.append("[\"").append(
+                    StringUtils.replace(
+                        StringUtils.replace(this.key, "\\", "\\\\"),
+                        "\"",
+                        "\\\""
+                    )
+                ).append("\"]");
             }
         }
     }
