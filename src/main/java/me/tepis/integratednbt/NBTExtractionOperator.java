@@ -1,6 +1,5 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.client.resources.I18n;
 import net.minecraft.nbt.NBTBase;
 import org.cyclops.cyclopscore.helper.L10NHelpers;
 import org.cyclops.cyclopscore.helper.L10NHelpers.UnlocalizedString;
@@ -41,7 +40,7 @@ public class NBTExtractionOperator implements IOperator {
 
     @Override
     public String getLocalizedNameFull() {
-        return I18n.format("integratednbt:nbt_extraction_operator.full_name");
+        return L10NHelpers.localize("integratednbt:nbt_extraction_operator.full_name");
     }
 
     @Override

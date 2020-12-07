@@ -38,7 +38,7 @@ import org.cyclops.integrateddynamics.core.item.VariableFacadeHandlerRegistry;
 public class IntegratedNBT {
     public static final String MODID = "integratednbt";
     public static final String NAME = "Integrated NBT";
-    public static final String VERSION = "1.2.1";
+    public static final String VERSION = "1.2.2";
     private static SimpleNetworkWrapper networkChannel =
         NetworkRegistry.INSTANCE.newSimpleChannel(MODID);
     @Instance(MODID)
