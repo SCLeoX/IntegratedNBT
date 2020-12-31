@@ -53,5 +53,5 @@
   "integratednbt:nbt_extractor_remote.invalid_bind": "绑定的 NBT 提取器被破坏了。",
   "integratednbt:nbt_extractor_remote.tooltip": "§7允许远程访问 NBT 提取器。",
   "integratednbt:nbt_extractor_remote.tooltip.not_bound": "§e右键一个 NBT 提取器来绑定。",
-  "integratednbt:nbt_extractor_remote.tooltip.bound": "§a目前与位于 (%s, %s, %s) 于世界 %s 的 NBT 提取器绑定。"
+  "integratednbt:nbt_extractor_remote.tooltip.bound": "目前与位于 (%s, %s, %s) 于世界 %s 的 NBT 提取器绑定。"
 }

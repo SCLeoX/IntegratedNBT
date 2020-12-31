@@ -11,19 +11,22 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUseContext;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Hand;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.network.PacketDistributor;
-import net.minecraftforge.fml.server.ServerLifecycleHooks;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -54,18 +57,18 @@ public class NBTExtractorRemote extends Item {
         CompoundNBT nbt = this.getModNBT(itemStack);
         if (!nbt.contains("world")) {
             player.sendMessage(new TranslationTextComponent(
-                "integratednbt:nbt_extractor_remote.need_bind"));
+                "integratednbt:nbt_extractor_remote.need_bind"), Util.DUMMY_UUID);
             return;
         }
         ClientWorld world = Minecraft.getInstance().world;
         if (world == null) {
             player.sendMessage(new TranslationTextComponent(
-                "integratednbt:nbt_extractor_remote.invalid_bind"));
+                "integratednbt:nbt_extractor_remote.invalid_bind"), Util.DUMMY_UUID);
             return;
         }
-        if (world.getDimension().getType().getId() != nbt.getInt("world")) {
+        if (!world.getDimensionKey().getLocation().toString().equals(nbt.getString("world"))) {
             player.sendMessage(new TranslationTextComponent(
-                "integratednbt:nbt_extractor_remote.require_dim"));
+                "integratednbt:nbt_extractor_remote.require_dim"), Util.DUMMY_UUID);
             return;
         }
         BlockPos pos = new BlockPos(
@@ -75,12 +78,12 @@ public class NBTExtractorRemote extends Item {
         );
         if (!world.isAreaLoaded(pos, 1)) {
             player.sendMessage(new TranslationTextComponent(
-                "integratednbt:nbt_extractor_remote.require_load_client"));
+                "integratednbt:nbt_extractor_remote.require_load_client"), Util.DUMMY_UUID);
             return;
         }
         if (world.getBlockState(pos).getBlock() != Additions.NBT_EXTRACTOR_BLOCK.get()) {
             player.sendMessage(new TranslationTextComponent(
-                "integratednbt:nbt_extractor_remote.invalid_bind"));
+                "integratednbt:nbt_extractor_remote.invalid_bind"), Util.DUMMY_UUID);
             return;
         }
         PacketHandler.INSTANCE.send(
@@ -97,24 +100,20 @@ public class NBTExtractorRemote extends Item {
         CompoundNBT nbt = this.getModNBT(itemStack);
         if (!nbt.contains("world")) {
             player.sendMessage(new TranslationTextComponent(
-                "integratednbt:nbt_extractor_remote.need_bind"));
+                "integratednbt:nbt_extractor_remote.need_bind"), Util.DUMMY_UUID);
             return;
         }
-        DimensionType dimension = DimensionType.getById(nbt.getInt("world"));
-        if (dimension == null) {
+        RegistryKey<World> dimensionKey = RegistryKey.getOrCreateKey(Registry.WORLD_KEY, new ResourceLocation(nbt.getString("world")));
+        MinecraftServer server = player.getServer();
+        if (server == null) {
             player.sendMessage(new TranslationTextComponent(
-                "integratednbt:nbt_extractor_remote.invalid_bind"));
+                "integratednbt:nbt_extractor_remote.invalid_bind"), Util.DUMMY_UUID);
             return;
         }
-        World world = DimensionManager.getWorld(
-            ServerLifecycleHooks.getCurrentServer(),
-            dimension,
-            false,
-            false
-        );
+        World world = server.getWorld(dimensionKey);
         if (world == null) {
             player.sendMessage(new TranslationTextComponent(
-                "integratednbt:nbt_extractor_remote.invalid_bind"));
+                "integratednbt:nbt_extractor_remote.invalid_bind"), Util.DUMMY_UUID);
             return;
         }
         BlockPos pos = new BlockPos(
@@ -124,12 +123,12 @@ public class NBTExtractorRemote extends Item {
         );
         if (!world.isAreaLoaded(pos, 1)) {
             player.sendMessage(new TranslationTextComponent(
-                "integratednbt:nbt_extractor_remote.require_load_server"));
+                "integratednbt:nbt_extractor_remote.require_load_server"), Util.DUMMY_UUID);
             return;
         }
         if (world.getBlockState(pos).getBlock() != Additions.NBT_EXTRACTOR_BLOCK.get()) {
             player.sendMessage(new TranslationTextComponent(
-                "integratednbt:nbt_extractor_remote.invalid_bind"));
+                "integratednbt:nbt_extractor_remote.invalid_bind"), Util.DUMMY_UUID);
             return;
         }
         Additions.NBT_EXTRACTOR_BLOCK.get().playerAccess(world, pos, player);
@@ -154,7 +153,7 @@ public class NBTExtractorRemote extends Item {
                     String.valueOf(pos.getX()),
                     String.valueOf(pos.getY()),
                     String.valueOf(pos.getZ())
-                ));
+                ), Util.DUMMY_UUID);
             }
         } else if (world.isRemote) {
             this.clientUse(player.getHeldItem(hand), player);
@@ -164,7 +163,7 @@ public class NBTExtractorRemote extends Item {
 
     public void bindBlock(ItemStack itemStack, World world, BlockPos pos) {
         CompoundNBT nbt = this.getModNBT(itemStack);
-        nbt.putInt("world", world.getDimension().getType().getId());
+        nbt.putString("world", world.getDimensionKey().getLocation().toString());
         nbt.putInt("x", pos.getX());
         nbt.putInt("y", pos.getY());
         nbt.putInt("z", pos.getZ());
@@ -185,8 +184,8 @@ public class NBTExtractorRemote extends Item {
                 String.valueOf(nbt.getInt("x")),
                 String.valueOf(nbt.getInt("y")),
                 String.valueOf(nbt.getInt("z")),
-                String.valueOf(nbt.getInt("world"))
-            ));
+                nbt.getString("world")
+            ).modifyStyle(style -> style.setFormatting(TextFormatting.GREEN)));
         } else {
             tooltip.add(new TranslationTextComponent(
                 "integratednbt:nbt_extractor_remote.tooltip.not_bound"));

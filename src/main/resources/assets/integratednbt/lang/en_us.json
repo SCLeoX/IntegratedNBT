@@ -53,5 +53,5 @@
   "integratednbt:nbt_extractor_remote.invalid_bind": "Previously bound NBT Extractor no longer exists. Please right click another NBT Extractor block to bind again.",
   "integratednbt:nbt_extractor_remote.tooltip": "§7Allows remote access of a NBT Extractor.",
   "integratednbt:nbt_extractor_remote.tooltip.not_bound": "§eRight click a NBT Extractor to bind.",
-  "integratednbt:nbt_extractor_remote.tooltip.bound": "§aBound to NBT Extractor at (%s, %s, %s) in dimension %s."
+  "integratednbt:nbt_extractor_remote.tooltip.bound": "Bound to NBT Extractor at (%s, %s, %s) in dimension %s."
 }

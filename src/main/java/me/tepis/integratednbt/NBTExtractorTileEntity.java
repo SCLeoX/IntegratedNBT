@@ -18,6 +18,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.IBlockReader;
@@ -29,14 +30,9 @@ import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.datastructure.EnumFacingMap;
 import org.cyclops.cyclopscore.helper.MinecraftHelpers;
 import org.cyclops.cyclopscore.persist.nbt.NBTClassType;
-import org.cyclops.integrateddynamics.IntegratedDynamics;
 import org.cyclops.integrateddynamics.api.block.cable.ICable;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IVariable;
-import org.cyclops.integrateddynamics.api.item.IValueTypeVariableFacade;
-import org.cyclops.integrateddynamics.api.item.IVariableFacade;
-import org.cyclops.integrateddynamics.api.item.IVariableFacadeHandlerRegistry;
-import org.cyclops.integrateddynamics.api.item.IVariableFacadeHandlerRegistry.IVariableFacadeFactory;
 import org.cyclops.integrateddynamics.api.network.IEventListenableNetworkElement;
 import org.cyclops.integrateddynamics.api.network.INetwork;
 import org.cyclops.integrateddynamics.api.network.INetworkElement;
@@ -49,11 +45,9 @@ import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkE
 import org.cyclops.integrateddynamics.capability.path.PathElementTile;
 import org.cyclops.integrateddynamics.capability.variablecontainer.VariableContainerDefault;
 import org.cyclops.integrateddynamics.core.evaluate.InventoryVariableEvaluator;
-import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeOperator.ValueOperator;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypes;
 import org.cyclops.integrateddynamics.core.helper.CableHelpers;
 import org.cyclops.integrateddynamics.core.helper.NetworkHelpers;
-import org.cyclops.integrateddynamics.core.item.ValueTypeVariableFacade;
 import org.cyclops.integrateddynamics.core.network.event.VariableContentsUpdatedEvent;
 
 import javax.annotation.Nonnull;
@@ -405,7 +399,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
     }
 
     public ITextComponent getFirstErrorMessage() {
-        List<ITextComponent> errors = this.evaluator.getErrors();
+        List<IFormattableTextComponent> errors = this.evaluator.getErrors();
         if (errors.isEmpty()) {
             return null;
         } else {
@@ -498,7 +492,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         }
         CompoundNBT tag = Additions.NBT_EXTRACTOR_REMOTE.get().getModNBT(itemStack);
         return (tag.contains("world")) &&
-            (tag.getInt("world") == this.world.getDimension().getType().getId()) &&
+            (tag.getString("world").equals(this.world.getDimensionKey().getLocation().toString())) &&
             (tag.getInt("x") == this.pos.getX()) &&
             (tag.getInt("y") == this.pos.getY()) &&
             (tag.getInt("z") == this.pos.getZ());
@@ -604,7 +598,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
 
     @Override
     @SuppressWarnings("unchecked")
-    public void read(CompoundNBT tag) {
+    public void read(BlockState blockState, CompoundNBT tag) {
         if (tag.contains("errors")) {
             this.evaluator.setErrors(NBTClassType.readNbt(List.class, "errors", tag));
         }
@@ -628,7 +622,7 @@ public class NBTExtractorTileEntity extends TileEntity implements ICapabilityPro
         }
         ItemStackHelper.loadAllItems(tag, this.itemStacks);
         this.shouldRefreshVariable = true;
-        super.read(tag);
+        super.read(blockState, tag);
     }
 
     public void afterNetworkReAlive() {

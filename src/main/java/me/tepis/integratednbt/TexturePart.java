@@ -1,13 +1,11 @@
 package me.tepis.integratednbt;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.gui.AbstractGui;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.api.distmarker.Dist;
 
 /**
  * Represents a part in a texture; Offers help method for quick rendering
  */
-@OnlyIn(Dist.CLIENT)
 public class TexturePart {
     private Texture texture;
     private int x;
@@ -23,9 +21,9 @@ public class TexturePart {
         this.height = height;
     }
 
-    public void renderTo(AbstractGui gui, int x, int y) {
+    public void renderTo(AbstractGui gui, MatrixStack matrixStack, int x, int y) {
         this.texture.bind();
-        gui.blit(x, y, this.x, this.y, this.width, this.height);
+        gui.blit(matrixStack, x, y, this.x, this.y, this.width, this.height);
     }
 
     public void renderTo(ExtendedContainerScreen<?> gui, int x, int y, int width, int height) {

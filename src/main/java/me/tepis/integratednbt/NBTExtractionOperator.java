@@ -2,6 +2,7 @@ package me.tepis.integratednbt;
 
 import net.minecraft.nbt.INBT;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TranslationTextComponent;
@@ -46,7 +47,7 @@ public class NBTExtractionOperator implements IOperator {
     }
 
     @Override
-    public ITextComponent getLocalizedNameFull() {
+    public IFormattableTextComponent getLocalizedNameFull() {
         return new TranslationTextComponent("integratednbt:nbt_extraction_operator.full_name");
     }
 
@@ -69,7 +70,7 @@ public class NBTExtractionOperator implements IOperator {
             L10NValues.OPERATOR_TOOLTIP_INPUTTYPENAME,
             1,
             new TranslationTextComponent(ValueTypes.NBT.getTranslationKey()).setStyle(
-                new Style().setColor(
+                Style.EMPTY.setFormatting(
                     ValueTypes.NBT.getDisplayColorFormat()))
         ));
         lines.add(new TranslationTextComponent(
@@ -142,7 +143,7 @@ public class NBTExtractionOperator implements IOperator {
     }
 
     @Override
-    public ITextComponent validateTypes(IValueType[] input) {
+    public IFormattableTextComponent validateTypes(IValueType[] input) {
         if (input.length != 1) {
             return new TranslationTextComponent(
                 L10NValues.OPERATOR_ERROR_WRONGINPUTLENGTH,

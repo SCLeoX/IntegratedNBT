@@ -5,7 +5,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraftforge.common.extensions.IForgeContainerType;
@@ -14,7 +13,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 
 public abstract class Additions {
-    public static final DeferredRegister<Block> BLOCKS = new DeferredRegister<>(
+    public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(
         ForgeRegistries.BLOCKS,
         IntegratedNBT.MODID
     );
@@ -26,7 +25,7 @@ public abstract class Additions {
             .sound(SoundType.METAL))
     );
 
-    public static final DeferredRegister<Item> ITEMS = new DeferredRegister<>(
+    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(
         ForgeRegistries.ITEMS,
         IntegratedNBT.MODID
     );
@@ -41,7 +40,7 @@ public abstract class Additions {
         NBTExtractorRemote::new
     );
 
-    public static final DeferredRegister<ContainerType<?>> CONTAINER_TYPES = new DeferredRegister<>(
+    public static final DeferredRegister<ContainerType<?>> CONTAINER_TYPES = DeferredRegister.create(
         ForgeRegistries.CONTAINERS,
         IntegratedNBT.MODID
     );
@@ -53,7 +52,7 @@ public abstract class Additions {
         );
 
     public static final DeferredRegister<TileEntityType<?>> TILE_ENTITY_TYPES =
-        new DeferredRegister<>(
+        DeferredRegister.create(
             ForgeRegistries.TILE_ENTITIES,
             IntegratedNBT.MODID
         );

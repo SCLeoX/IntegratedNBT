@@ -1,8 +1,10 @@
 package me.tepis.integratednbt;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.widget.button.Button;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -21,7 +23,7 @@ public class ImageButton extends Button {
         int y,
         Button.IPressable onPress
     ) {
-        super(x, y, textureNormal.getWidth(), textureNormal.getHeight(), "", onPress);
+        super(x, y, textureNormal.getWidth(), textureNormal.getHeight(), new StringTextComponent(""), onPress);
         this.textureNormal = textureNormal;
         this.textureHover = textureHover;
     }
@@ -30,7 +32,7 @@ public class ImageButton extends Button {
      * For lazy initialization of textures.
      */
     public ImageButton(int x, int y, Button.IPressable onPress) {
-        super(x, y, 1, 1, "", onPress);
+        super(x, y, 1, 1, new StringTextComponent(""), onPress);
     }
 
     public void setTexture(TexturePart textureNormal, TexturePart textureHover) {
@@ -44,7 +46,7 @@ public class ImageButton extends Button {
      * Draws this button to the screen.
      */
     @Override
-    public void renderButton(int mouseX, int mouseY, float wtf) {
+    public void renderButton(MatrixStack matrixStack, int mouseX, int mouseY, float wtf) {
         if (this.visible) {
             RenderSystem.color3f(255, 255, 255);
             this.isHovered = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width &&
@@ -53,7 +55,7 @@ public class ImageButton extends Button {
                 ? this.textureHover
                 : this.textureNormal;
             GlStateManager.disableDepthTest();
-            texturePart.renderTo(this, this.x, this.y);
+            texturePart.renderTo(this, matrixStack, this.x, this.y);
             GlStateManager.enableDepthTest();
         }
     }

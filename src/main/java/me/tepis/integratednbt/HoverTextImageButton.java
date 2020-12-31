@@ -1,10 +1,11 @@
 package me.tepis.integratednbt;
 
-import lombok.Delegate;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraftforge.fml.client.gui.GuiUtils;
 
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
 public class HoverTextImageButton extends ImageButton {
     private Screen gui;
 
-    private List<String> hoverText;
+    private List<ITextComponent> hoverText;
 
     public HoverTextImageButton(
         Screen gui,
@@ -33,28 +34,27 @@ public class HoverTextImageButton extends ImageButton {
     }
 
     public void setHoverText(List<ITextComponent> hoverText) {
-        this.hoverText = hoverText.stream()
-            .map(ITextComponent::getFormattedText)
-            .collect(Collectors.toList());
+        this.hoverText = hoverText;
     }
 
     public void setHoverTextRaw(List<String> hoverText) {
-        this.hoverText = hoverText;
+        this.hoverText = hoverText.stream().map(StringTextComponent::new).collect(Collectors.toList());
     }
 
     /**
      * Draw hover text if is hovered
      */
-    public void drawHover(int mouseX, int mouseY) {
+    public void drawHover(MatrixStack matrixStack, int mouseX, int mouseY) {
         if (this.isHovered) {
             GuiUtils.drawHoveringText(
+                matrixStack,
                 this.hoverText,
                 mouseX,
                 mouseY,
                 this.gui.width,
                 this.gui.height,
                 240,
-                SensibleFontRenderer.get()
+                Minecraft.getInstance().fontRenderer // SensibleFontRenderer.get()
             );
         }
     }

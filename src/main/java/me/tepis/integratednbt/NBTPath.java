@@ -88,14 +88,9 @@ public class NBTPath {
 
     private static class IndexSegment implements Segment {
         private final int index;
-        private final String displayText;
 
         private IndexSegment(int index) {
             this.index = index;
-            this.displayText = I18n.format(
-                "integratednbt:nbt_extractor.index",
-                String.valueOf(index)
-            );
         }
 
         @Override
@@ -119,7 +114,10 @@ public class NBTPath {
 
         @Override
         public String getDisplayText() {
-            return this.displayText;
+            return I18n.format(
+                "integratednbt:nbt_extractor.index",
+                String.valueOf(index)
+            );
         }
 
         @Override

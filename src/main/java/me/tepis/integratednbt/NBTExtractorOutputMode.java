@@ -225,13 +225,13 @@ public enum NBTExtractorOutputMode {
             "integratednbt:nbt_extractor.output_mode." + this.translationId + ".description",
             this.getName()
         ).setStyle(highlighted
-            ? new Style().setColor(TextFormatting.GRAY)
-            : new Style().setColor(TextFormatting.DARK_GRAY));
+            ? Style.EMPTY.setFormatting(TextFormatting.GRAY)
+            : Style.EMPTY.setFormatting(TextFormatting.DARK_GRAY));
     }
 
     public ITextComponent getName() {
         return new TranslationTextComponent(
             "integratednbt:nbt_extractor.output_mode." + this.translationId + ".name"
-        ).setStyle(new Style().setColor(this.color));
+        ).setStyle(Style.EMPTY.setFormatting(this.color));
     }
 }

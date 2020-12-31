@@ -1,5 +1,6 @@
 package me.tepis.integratednbt;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.resources.I18n;
@@ -13,6 +14,7 @@ import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.LongNBT;
 import net.minecraft.nbt.NBTTypes;
 import net.minecraft.nbt.ShortNBT;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraftforge.fml.client.gui.GuiUtils;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValueType;
@@ -20,6 +22,7 @@ import org.cyclops.integrateddynamics.api.evaluate.variable.IValueType;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static me.tepis.integratednbt.NBTExtractorScreen.GUI_TEXTURE;
 import static me.tepis.integratednbt.NBTExtractorScreen.SCREEN_EDGE;
@@ -140,6 +143,7 @@ public abstract class NBTTreeViewer {
     }
 
     private boolean renderKVPair(
+        MatrixStack matrixStack,
         String label,
         String value,
         int valueColor
@@ -176,20 +180,21 @@ public abstract class NBTTreeViewer {
             }
         }
         if (value.isEmpty()) {
-            this.fontRenderer.drawString(label, this.currentX, this.currentY, LABEL_COLOR);
+            this.fontRenderer.drawString(matrixStack, label, this.currentX, this.currentY, LABEL_COLOR);
         } else {
             int valueX = this.fontRenderer.drawString(
+                matrixStack,
                 label + ": ",
                 this.currentX,
                 this.currentY,
                 LABEL_COLOR
             );
-            this.fontRenderer.drawString(value, valueX, this.currentY, valueColor);
+            this.fontRenderer.drawString(matrixStack, value, valueX, this.currentY, valueColor);
         }
         return isHovering;
     }
 
-    private void renderExpandableButton(boolean expanded) {
+    private void renderExpandableButton(MatrixStack matrixStack, boolean expanded) {
         boolean hovering = (
             this.mouseX >= this.currentX &&
                 this.mouseX < (this.currentX + EXPAND_BUTTON_SIZE) &&
@@ -203,11 +208,11 @@ public abstract class NBTTreeViewer {
             this.hoveringExpandableButton = this.currentPath.copy();
         }
         GlHelper.colorInt(EXPAND_COLOR);
-        part.renderTo(this.gui, this.currentX, this.currentY);
+        part.renderTo(this.gui, matrixStack, this.currentX, this.currentY);
         this.currentX += EXPAND_BUTTON_SIZE + EXPAND_BUTTON_RIGHT_MARGIN;
     }
 
-    public void render(INBT nbt, int absMouseX, int absMouseY) {
+    public void render(MatrixStack matrixStack, INBT nbt, int absMouseX, int absMouseY) {
         this.hoveringPath = null;
         this.hoveringNBTNode = null;
         this.hoveringExpandableButton = null;
@@ -221,13 +226,14 @@ public abstract class NBTTreeViewer {
             glTranslated(this.left, this.top - this.renderScroll, 0);
             if (nbt == null) {
                 this.fontRenderer.drawString(
+                    matrixStack,
                     I18n.format("integratednbt:nbt_extractor.empty"),
                     SCREEN_EDGE,
                     this.currentY,
                     EMPTY_COLOR
                 );
             } else {
-                this.renderNode(I18n.format("integratednbt:nbt_extractor.root"), nbt);
+                this.renderNode(matrixStack, I18n.format("integratednbt:nbt_extractor.root"), nbt);
             }
             int totalHeight = this.currentY + SCREEN_EDGE;
             glTranslated(0, this.renderScroll, 0);
@@ -263,7 +269,7 @@ public abstract class NBTTreeViewer {
                 list.add(I18n.format(
                     "integratednbt:nbt_extractor.tooltip.nbt_type",
                     // Get NBT tag type from tag type id
-                    NBTTypes.func_229710_a_(this.hoveringNBTNode.getId()).func_225650_b_()
+                    NBTTypes.getGetTypeByID(this.hoveringNBTNode.getId()).getTagName()
                 ));
                 list.add(I18n.format(
                     "integratednbt:nbt_extractor.tooltip.converted_type",
@@ -291,7 +297,8 @@ public abstract class NBTTreeViewer {
                     }
                 }
                 GuiUtils.drawHoveringText(
-                    list,
+                    matrixStack,
+                    list.stream().map(StringTextComponent::new).collect(Collectors.toList()),
                     this.mouseX,
                     (int) (this.mouseY - this.renderScroll),
                     this.width,
@@ -348,10 +355,11 @@ public abstract class NBTTreeViewer {
         return nbtId == 9 || nbtId == 10;
     }
 
-    private void renderEmpty() {
+    private void renderEmpty(MatrixStack matrixStack) {
         this.currentX = (this.currentPath.getDepth() + 1) * INDENTATION + SCREEN_EDGE
             + EXPAND_BUTTON_RIGHT_MARGIN + EXPAND_BUTTON_SIZE;
         this.fontRenderer.drawString(
+            matrixStack,
             I18n.format("integratednbt:nbt_extractor.empty"),
             this.currentX,
             this.currentY,
@@ -360,7 +368,7 @@ public abstract class NBTTreeViewer {
         this.currentY += this.fontRenderer.FONT_HEIGHT + LINE_SPACE;
     }
 
-    private void renderNode(String label, INBT node) {
+    private void renderNode(MatrixStack matrixStack, String label, INBT node) {
         this.currentX = this.currentPath.getDepth() * INDENTATION + SCREEN_EDGE;
         boolean isExpandedIfExpandable = false;
         if (isNodeExpandable(node)) {
@@ -375,6 +383,7 @@ public abstract class NBTTreeViewer {
         switch (node.getId()) {
             case 1: // Byte
                 isHoveringText = this.renderKVPair(
+                    matrixStack,
                     label,
                     String.valueOf(((ByteNBT) node).getByte()),
                     NUMBER_COLOR
@@ -382,6 +391,7 @@ public abstract class NBTTreeViewer {
                 break;
             case 2: // Short
                 isHoveringText = this.renderKVPair(
+                    matrixStack,
                     label,
                     String.valueOf(((ShortNBT) node).getShort()),
                     NUMBER_COLOR
@@ -389,6 +399,7 @@ public abstract class NBTTreeViewer {
                 break;
             case 3: // Int
                 isHoveringText = this.renderKVPair(
+                    matrixStack,
                     label,
                     String.valueOf(((IntNBT) node).getInt()),
                     NUMBER_COLOR
@@ -396,6 +407,7 @@ public abstract class NBTTreeViewer {
                 break;
             case 4: // Long
                 isHoveringText = this.renderKVPair(
+                    matrixStack,
                     label,
                     String.valueOf(((LongNBT) node).getLong()),
                     NUMBER_COLOR
@@ -403,6 +415,7 @@ public abstract class NBTTreeViewer {
                 break;
             case 5: // Float
                 isHoveringText = this.renderKVPair(
+                    matrixStack,
                     label,
                     String.valueOf(((FloatNBT) node).getFloat()),
                     NUMBER_COLOR
@@ -410,6 +423,7 @@ public abstract class NBTTreeViewer {
                 break;
             case 6: // Double
                 isHoveringText = this.renderKVPair(
+                    matrixStack,
                     label,
                     String.valueOf(((DoubleNBT) node).getDouble()),
                     NUMBER_COLOR
@@ -419,6 +433,7 @@ public abstract class NBTTreeViewer {
             case 11: // Int Array
             case 12: // Long Array
                 isHoveringText = this.renderKVPair(
+                    matrixStack,
                     label,
                     "[]",
                     NUMBER_COLOR
@@ -426,6 +441,7 @@ public abstract class NBTTreeViewer {
                 break;
             case 8: // String
                 isHoveringText = this.renderKVPair(
+                    matrixStack,
                     label,
                     // Yes, I understand technically we should escape double quotes in the string.
                     // However, I think that will just make it confusing.
@@ -435,8 +451,9 @@ public abstract class NBTTreeViewer {
                 break;
             case 9: // List
             case 10: { // Compound
-                this.renderExpandableButton(isExpandedIfExpandable);
+                this.renderExpandableButton(matrixStack, isExpandedIfExpandable);
                 isHoveringText = this.renderKVPair(
+                    matrixStack,
                     label,
                     (isExpandedIfExpandable ? "" : node.toString()),
                     COMPLEX_COLOR
@@ -456,13 +473,13 @@ public abstract class NBTTreeViewer {
             switch (node.getId()) {
                 case 9: { // List
                     if (((ListNBT) node).size() == 0) {
-                        this.renderEmpty();
+                        this.renderEmpty(matrixStack);
                         break;
                     }
                     int i = 0;
                     for (INBT item : (ListNBT) node) {
                         this.currentPath.pushIndex(i);
-                        this.renderNode("#" + i, item);
+                        this.renderNode(matrixStack, "#" + i, item);
                         this.currentPath.pop();
                         i++;
                     }
@@ -470,13 +487,13 @@ public abstract class NBTTreeViewer {
                 }
                 case 10: { // Compound
                     if (((CompoundNBT) node).size() == 0) {
-                        this.renderEmpty();
+                        this.renderEmpty(matrixStack);
                         break;
                     }
                     CompoundNBT compound = (CompoundNBT) node;
                     for (String key : compound.keySet()) {
                         this.currentPath.pushKey(key);
-                        this.renderNode(key, compound.get(key));
+                        this.renderNode(matrixStack, key, compound.get(key));
                         this.currentPath.pop();
                     }
                     break;
