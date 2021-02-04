@@ -128,7 +128,11 @@ public class NBTPath {
         @Override
         public INBT access(INBT parent) {
             if (parent instanceof ListNBT) {
-                INBT base = ((ListNBT) parent).get(this.index);
+                ListNBT parentList = ((ListNBT) parent);
+                if (parentList.size() <= this.index || this.index < 0) {
+                    return null;
+                }
+                INBT base = parentList.get(this.index);
                 if (base.getId() == 0 /* TagEnd */) {
                     return null;
                 }
