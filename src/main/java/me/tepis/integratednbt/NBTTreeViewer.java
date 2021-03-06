@@ -238,6 +238,10 @@ public abstract class NBTTreeViewer {
             int totalHeight = this.currentY + SCREEN_EDGE;
             glTranslated(0, this.renderScroll, 0);
             this.maxScroll = Math.max(totalHeight - this.height, 0);
+            if (this.scrollTop.get() > this.maxScroll) {
+                this.scrollTop.set(this.maxScroll);
+                this.startScrollTransition();
+            }
             if (this.maxScroll != 0) {
                 GlHelper.colorInt(SCREEN_BACKGROUND_COLOR);
                 PURE_COLOR.renderTo(
