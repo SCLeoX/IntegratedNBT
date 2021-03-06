@@ -135,14 +135,14 @@ public class NBTExtractor extends CabledHorizontalBlock {
                 return ActionResultType.SUCCESS;
             }
             if (heldItem.getItem() == Additions.NBT_EXTRACTOR_REMOTE.get()) {
-                return ActionResultType.FAIL;
+                return ActionResultType.PASS;
             }
             if (!player.isCrouching()) {
                 this.playerAccess(world, blockPos, playerMP);
                 return ActionResultType.SUCCESS;
             }
         }
-        return super.onBlockActivated(blockState, world, blockPos, player, hand, rayTraceResult);
+        return ActionResultType.SUCCESS;
     }
 
     public void playerAccess(World world, BlockPos pos, ServerPlayerEntity playerMP) {
