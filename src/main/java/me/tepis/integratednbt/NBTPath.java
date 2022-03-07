@@ -1,9 +1,9 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.client.resources.I18n;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.ListTag;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -17,7 +17,7 @@ public class NBTPath {
 
         String getCompactDisplayText();
 
-        INBT access(INBT parent);
+        Tag access(Tag parent);
 
         void buildCyclopsNBTPath(StringBuilder stringBuilder);
     }
@@ -60,9 +60,9 @@ public class NBTPath {
         }
 
         @Override
-        public INBT access(INBT parent) {
-            if (parent instanceof CompoundNBT) {
-                return ((CompoundNBT) parent).get(this.key);
+        public Tag access(Tag parent) {
+            if (parent instanceof CompoundTag) {
+                return ((CompoundTag) parent).get(this.key);
             } else {
                 return null;
             }
@@ -114,7 +114,7 @@ public class NBTPath {
 
         @Override
         public String getDisplayText() {
-            return I18n.format(
+            return I18n.get(
                 "integratednbt:nbt_extractor.index",
                 String.valueOf(index)
             );
@@ -126,13 +126,13 @@ public class NBTPath {
         }
 
         @Override
-        public INBT access(INBT parent) {
-            if (parent instanceof ListNBT) {
-                ListNBT parentList = ((ListNBT) parent);
+        public Tag access(Tag parent) {
+            if (parent instanceof ListTag) {
+                ListTag parentList = ((ListTag) parent);
                 if (parentList.size() <= this.index || this.index < 0) {
                     return null;
                 }
-                INBT base = parentList.get(this.index);
+                Tag base = parentList.get(this.index);
                 if (base.getId() == 0 /* TagEnd */) {
                     return null;
                 }
@@ -167,18 +167,18 @@ public class NBTPath {
         this.segments = new ArrayList<>();
     }
 
-    public static Optional<NBTPath> fromNBT(INBT nbt) {
+    public static Optional<NBTPath> fromNBT(Tag nbt) {
         try {
-            if (nbt instanceof CompoundNBT) {
-                nbt = ((CompoundNBT) nbt).get(KEY_PATH);
+            if (nbt instanceof CompoundTag) {
+                nbt = ((CompoundTag) nbt).get(KEY_PATH);
             }
-            myAssert(nbt instanceof ListNBT);
-            ListNBT list = (ListNBT) nbt;
-            myAssert(list.getTagType() == 10 || list.size() == 0); /* Compound */
+            myAssert(nbt instanceof ListTag);
+            ListTag list = (ListTag) nbt;
+            myAssert(list.getElementType() == 10 || list.size() == 0); /* Compound */
             myAssert(list.size() <= MAX_EXTRACTION_DEPTH);
             ArrayList<Segment> segments = new ArrayList<>(list.size());
-            for (INBT item : list) {
-                CompoundNBT compound = (CompoundNBT) item;
+            for (Tag item : list) {
+                CompoundTag compound = (CompoundTag) item;
                 String type = compound.getString(KEY_TYPE);
                 myAssert(!type.isEmpty());
                 if (type.equals(TYPE_KEY)) {
@@ -244,22 +244,22 @@ public class NBTPath {
         return this.segments.hashCode();
     }
 
-    public CompoundNBT toNBTCompound() {
-        CompoundNBT compound = new CompoundNBT();
+    public CompoundTag toNBTCompound() {
+        CompoundTag compound = new CompoundTag();
         compound.put(KEY_PATH, this.toNBT());
         return compound;
     }
 
-    public ListNBT toNBT() {
-        ListNBT list = new ListNBT();
+    public ListTag toNBT() {
+        ListTag list = new ListTag();
         for (Segment segment : this.segments) {
             if (segment instanceof KeySegment) {
-                CompoundNBT tag = new CompoundNBT();
+                CompoundTag tag = new CompoundTag();
                 tag.putString(KEY_TYPE, TYPE_KEY);
                 tag.putString(KEY_KEY, ((KeySegment) segment).key);
                 list.add(tag);
             } else {
-                CompoundNBT tag = new CompoundNBT();
+                CompoundTag tag = new CompoundTag();
                 tag.putString(KEY_TYPE, TYPE_INDEX);
                 tag.putInt(KEY_INDEX, ((IndexSegment) segment).index);
                 list.add(tag);
@@ -268,7 +268,7 @@ public class NBTPath {
         return list;
     }
 
-    public INBT extract(INBT source) {
+    public Tag extract(Tag source) {
         for (Segment segment : this.segments) {
             if (source == null) {
                 return null;
@@ -281,10 +281,10 @@ public class NBTPath {
 
     public String getDisplayText() {
         if (this.segments.isEmpty()) {
-            return I18n.format("integratednbt:nbt_extractor.root");
+            return I18n.get("integratednbt:nbt_extractor.root");
         } else {
-            String arrow = I18n.format("integratednbt:nbt_extractor.arrow");
-            return I18n.format("integratednbt:nbt_extractor.root") + arrow +
+            String arrow = I18n.get("integratednbt:nbt_extractor.arrow");
+            return I18n.get("integratednbt:nbt_extractor.root") + arrow +
                 this.segments.stream()
                     .map(Segment::getDisplayText)
                     .collect(Collectors.joining(arrow));

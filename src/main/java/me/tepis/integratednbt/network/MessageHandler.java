@@ -1,8 +1,8 @@
 package me.tepis.integratednbt.network;
 
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent.Context;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraftforge.network.simple.SimpleChannel;
 
 import java.util.function.Supplier;
 
@@ -23,11 +23,11 @@ public abstract class MessageHandler<TMessage extends Message> {
 
     protected abstract Class<TMessage> getMessageClass();
 
-    private void encode(TMessage message, PacketBuffer writeTo) {
+    private void encode(TMessage message, FriendlyByteBuf writeTo) {
         message.toBytes(writeTo);
     }
 
-    private TMessage decode(PacketBuffer readFrom) {
+    private TMessage decode(FriendlyByteBuf readFrom) {
         TMessage message = this.createEmpty();
         message.fromBytes(readFrom);
         return message;

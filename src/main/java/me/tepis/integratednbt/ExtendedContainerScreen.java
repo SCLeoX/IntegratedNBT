@@ -1,53 +1,57 @@
 package me.tepis.integratednbt;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.screen.inventory.ContainerScreen;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.util.IReorderingProcessor;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.ITextProperties;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat.Mode;
+import com.mojang.math.Matrix4f;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 
-public abstract class ExtendedContainerScreen<T extends Container> extends ContainerScreen<T> {
+public abstract class ExtendedContainerScreen<T extends AbstractContainerMenu> extends AbstractContainerScreen<T> {
     public ExtendedContainerScreen(
         T screenContainer,
-        PlayerInventory inv,
-        ITextComponent titleIn
+        Inventory inv,
+        Component titleIn
     ) {
         super(screenContainer, inv, titleIn);
     }
 
     public void drawTexturedModalRectScalable(
+        Matrix4f matrix,
         int destX, int destY,
         int destWidth, int destHeight,
         int srcX, int srcY,
         int srcWidth, int srcHeight
     ) {
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder bufferbuilder = tessellator.getBuffer();
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
-        bufferbuilder.pos(destX, destY + destHeight, 0)
-            .tex((float) (srcX) * 0.00390625F, (float) (srcY + srcHeight) * 0.00390625F)
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder bufferbuilder = tesselator.getBuilder();
+        bufferbuilder.begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bufferbuilder.vertex(matrix, destX, destY + destHeight, 0)
+            .uv((float) (srcX) * 0.00390625F, (float) (srcY + srcHeight) * 0.00390625F)
             .endVertex();
-        bufferbuilder.pos(destX + destWidth, destY + destHeight, 0)
-            .tex((float) (srcX + srcWidth) * 0.00390625F, (float) (srcY + srcHeight) * 0.00390625F)
+        bufferbuilder.vertex(matrix, destX + destWidth, destY + destHeight, 0)
+            .uv((float) (srcX + srcWidth) * 0.00390625F, (float) (srcY + srcHeight) * 0.00390625F)
             .endVertex();
-        bufferbuilder.pos(destX + destWidth, destY, 0)
-            .tex((float) (srcX + srcWidth) * 0.00390625F, (float) (srcY) * 0.00390625F)
+        bufferbuilder.vertex(matrix, destX + destWidth, destY, 0)
+            .uv((float) (srcX + srcWidth) * 0.00390625F, (float) (srcY) * 0.00390625F)
             .endVertex();
-        bufferbuilder.pos(destX, destY, 0)
-            .tex((float) (srcX) * 0.00390625F, (float) (srcY) * 0.00390625F)
+        bufferbuilder.vertex(matrix, destX, destY, 0)
+            .uv((float) (srcX) * 0.00390625F, (float) (srcY) * 0.00390625F)
             .endVertex();
-        tessellator.draw();
+        tesselator.end();
     }
 
-    public void drawSplitString(MatrixStack matrixStack, FontRenderer fontRenderer, ITextProperties text, int x, int y, int maxLength, int color) {
-        for(IReorderingProcessor ireorderingprocessor : fontRenderer.trimStringToWidth(text, maxLength)) {
-            fontRenderer.func_238407_a_(matrixStack, ireorderingprocessor, (float) x, (float) y, color);
+    public void drawSplitString(PoseStack matrixStack, Font fontRenderer, FormattedText text, int x, int y, int maxLength, int color) {
+        for(FormattedCharSequence ireorderingprocessor : fontRenderer.split(text, maxLength)) {
+            fontRenderer.drawShadow(matrixStack, ireorderingprocessor, (float) x, (float) y, color);
             y += 9;
         }
 

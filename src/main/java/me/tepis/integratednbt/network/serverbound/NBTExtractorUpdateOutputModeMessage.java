@@ -1,9 +1,9 @@
 package me.tepis.integratednbt.network.serverbound;
 
 import me.tepis.integratednbt.NBTExtractorOutputMode;
-import me.tepis.integratednbt.NBTExtractorTileEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.math.BlockPos;
+import me.tepis.integratednbt.NBTExtractorBE;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.core.BlockPos;
 
 /**
  * From client to server;
@@ -16,7 +16,7 @@ public class NBTExtractorUpdateOutputModeMessage extends NBTExtractorUpdateServe
         @Override
         public void updateTileEntity(
             NBTExtractorUpdateOutputModeMessage message,
-            NBTExtractorTileEntity nbtExtractorTileEntity
+            NBTExtractorBE nbtExtractorTileEntity
         ) {
             nbtExtractorTileEntity.setOutputMode(message.outputMode);
         }
@@ -45,13 +45,13 @@ public class NBTExtractorUpdateOutputModeMessage extends NBTExtractorUpdateServe
     }
 
     @Override
-    public void fromBytes(PacketBuffer buf) {
+    public void fromBytes(FriendlyByteBuf buf) {
         super.fromBytes(buf);
         this.outputMode = NBTExtractorOutputMode.values()[buf.readByte()];
     }
 
     @Override
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(FriendlyByteBuf buf) {
         super.toBytes(buf);
         buf.writeByte(this.outputMode.ordinal());
     }

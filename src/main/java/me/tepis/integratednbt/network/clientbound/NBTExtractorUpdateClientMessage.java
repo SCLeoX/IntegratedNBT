@@ -6,11 +6,11 @@ import me.tepis.integratednbt.NBTExtractorOutputMode;
 import me.tepis.integratednbt.NBTPath;
 import me.tepis.integratednbt.network.Message;
 import me.tepis.integratednbt.network.MessageHandler;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraftforge.fml.network.NetworkEvent.Context;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraftforge.network.NetworkEvent.Context;
 
 import java.util.function.Supplier;
 
@@ -69,13 +69,13 @@ public class NBTExtractorUpdateClientMessage implements Message {
 
     private byte updated = 0;
     private ErrorCode errorCode;
-    private INBT nbt;
+    private Tag nbt;
     private NBTPath path;
     private NBTExtractorOutputMode outputMode;
-    private ITextComponent errorMessage;
+    private Component errorMessage;
     private boolean autoRefresh;
 
-    public void updateNBT(INBT nbt) {
+    public void updateNBT(Tag nbt) {
         this.nbt = nbt;
         this.updated |= MASK_NBT;
     }
@@ -95,7 +95,7 @@ public class NBTExtractorUpdateClientMessage implements Message {
         this.updated |= MASK_OUTPUT_MODE;
     }
 
-    public void updateErrorMessage(ITextComponent errorMessage) {
+    public void updateErrorMessage(Component errorMessage) {
         this.errorMessage = errorMessage;
         this.updated |= MASK_ERROR_MESSAGE;
     }
@@ -110,10 +110,10 @@ public class NBTExtractorUpdateClientMessage implements Message {
     }
 
     @Override
-    public void fromBytes(PacketBuffer buf) {
+    public void fromBytes(FriendlyByteBuf buf) {
         this.updated = buf.readByte();
         if (this.isUpdated(MASK_NBT)) {
-            CompoundNBT compound = buf.readCompoundTag();
+            CompoundTag compound = buf.readNbt();
             assert compound != null;
             this.nbt = compound.get("nbt");
         }
@@ -121,7 +121,7 @@ public class NBTExtractorUpdateClientMessage implements Message {
             this.errorCode = ErrorCode.values()[buf.readByte()];
         }
         if (this.isUpdated(MASK_EXTRACTION_PATH)) {
-            this.path = NBTPath.fromNBT(buf.readCompoundTag()).orElse(new NBTPath());
+            this.path = NBTPath.fromNBT(buf.readNbt()).orElse(new NBTPath());
         }
         if (this.isUpdated(MASK_OUTPUT_MODE)) {
             this.outputMode = NBTExtractorOutputMode.values()[buf.readByte()];
@@ -130,7 +130,7 @@ public class NBTExtractorUpdateClientMessage implements Message {
             if (buf.readBoolean()) { // Is null
                 this.errorMessage = null;
             } else {
-                this.errorMessage = buf.readTextComponent();
+                this.errorMessage = buf.readComponent();
             }
         }
         if (this.isUpdated(MASK_AUTO_REFRESH)) {
@@ -143,20 +143,20 @@ public class NBTExtractorUpdateClientMessage implements Message {
     }
 
     @Override
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(FriendlyByteBuf buf) {
         buf.writeByte(this.updated);
         if (this.isUpdated(MASK_NBT)) {
-            CompoundNBT compound = new CompoundNBT();
+            CompoundTag compound = new CompoundTag();
             if (this.nbt != null) {
                 compound.put("nbt", this.nbt);
             }
-            buf.writeCompoundTag(compound);
+            buf.writeNbt(compound);
         }
         if (this.isUpdated(MASK_ERROR_CODE)) {
             buf.writeByte(this.errorCode.ordinal());
         }
         if (this.isUpdated(MASK_EXTRACTION_PATH)) {
-            buf.writeCompoundTag(this.path.toNBTCompound());
+            buf.writeNbt(this.path.toNBTCompound());
         }
         if (this.isUpdated(MASK_OUTPUT_MODE)) {
             buf.writeByte(this.outputMode.ordinal());
@@ -166,7 +166,7 @@ public class NBTExtractorUpdateClientMessage implements Message {
                 buf.writeBoolean(true);
             } else {
                 buf.writeBoolean(false);
-                buf.writeTextComponent(this.errorMessage);
+                buf.writeComponent(this.errorMessage);
             }
         }
         if (this.isUpdated(MASK_AUTO_REFRESH)) {

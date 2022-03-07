@@ -1,12 +1,13 @@
 package me.tepis.integratednbt;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.lwjgl.opengl.GL11;
 
 /**
  * Basically net.minecraft.client.gui.ImageButton, but more dynamic
@@ -21,9 +22,9 @@ public class ImageButton extends Button {
         TexturePart textureHover,
         int x,
         int y,
-        Button.IPressable onPress
+        Button.OnPress onPress
     ) {
-        super(x, y, textureNormal.getWidth(), textureNormal.getHeight(), new StringTextComponent(""), onPress);
+        super(x, y, textureNormal.getWidth(), textureNormal.getHeight(), new TextComponent(""), onPress);
         this.textureNormal = textureNormal;
         this.textureHover = textureHover;
     }
@@ -31,8 +32,8 @@ public class ImageButton extends Button {
     /**
      * For lazy initialization of textures.
      */
-    public ImageButton(int x, int y, Button.IPressable onPress) {
-        super(x, y, 1, 1, new StringTextComponent(""), onPress);
+    public ImageButton(int x, int y, Button.OnPress onPress) {
+        super(x, y, 1, 1, new TextComponent(""), onPress);
     }
 
     public void setTexture(TexturePart textureNormal, TexturePart textureHover) {
@@ -46,17 +47,18 @@ public class ImageButton extends Button {
      * Draws this button to the screen.
      */
     @Override
-    public void renderButton(MatrixStack matrixStack, int mouseX, int mouseY, float wtf) {
+    public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float wtf) {
         if (this.visible) {
-            RenderSystem.color3f(255, 255, 255);
             this.isHovered = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width &&
                 mouseY < this.y + this.height;
             TexturePart texturePart = this.isHovered
                 ? this.textureHover
                 : this.textureNormal;
-            GlStateManager.disableDepthTest();
-            texturePart.renderTo(this, matrixStack, this.x, this.y);
-            GlStateManager.enableDepthTest();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.enableDepthTest();
+//            RenderSystem.disableDepthTest();
+            texturePart.renderTo(this, matrixStack, this.x, this.y, 0xffffff);
+//            GlStateManager._enableDepthTest();
         }
     }
 }

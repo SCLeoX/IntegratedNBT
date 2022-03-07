@@ -1,11 +1,11 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.nbt.INBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.IFormattableTextComponent;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.Style;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TranslatableComponent;
 import org.cyclops.cyclopscore.helper.L10NHelpers;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.operator.IOperator;
@@ -47,33 +47,33 @@ public class NBTExtractionOperator implements IOperator {
     }
 
     @Override
-    public IFormattableTextComponent getLocalizedNameFull() {
-        return new TranslationTextComponent("integratednbt:nbt_extraction_operator.full_name");
+    public MutableComponent getLocalizedNameFull() {
+        return new TranslatableComponent("integratednbt:nbt_extraction_operator.full_name");
     }
 
     @Override
-    public void loadTooltip(List<ITextComponent> lines, boolean appendOptionalInfo) {
+    public void loadTooltip(List<Component> lines, boolean appendOptionalInfo) {
         String operatorName = L10NHelpers.localize(this.getTranslationKey());
         String categoryName = L10NHelpers.localize(this.getUnlocalizedCategoryName());
         String symbol = this.getSymbol();
         String outputTypeName = L10NHelpers.localize(this.getOutputType().getTranslationKey());
-        lines.add(new TranslationTextComponent(
+        lines.add(new TranslatableComponent(
             L10NValues.OPERATOR_TOOLTIP_OPERATORNAME,
             operatorName,
             symbol
         ));
-        lines.add(new TranslationTextComponent(
+        lines.add(new TranslatableComponent(
             L10NValues.OPERATOR_TOOLTIP_OPERATORCATEGORY,
             categoryName
         ));
-        lines.add(new TranslationTextComponent(
+        lines.add(new TranslatableComponent(
             L10NValues.OPERATOR_TOOLTIP_INPUTTYPENAME,
             1,
-            new TranslationTextComponent(ValueTypes.NBT.getTranslationKey()).setStyle(
-                Style.EMPTY.setFormatting(
+            new TranslatableComponent(ValueTypes.NBT.getTranslationKey()).setStyle(
+                Style.EMPTY.withColor(
                     ValueTypes.NBT.getDisplayColorFormat()))
         ));
-        lines.add(new TranslationTextComponent(
+        lines.add(new TranslatableComponent(
             L10NValues.OPERATOR_TOOLTIP_OUTPUTTYPENAME,
             this.getOutputType().getDisplayColorFormat() + outputTypeName
         ));
@@ -110,7 +110,7 @@ public class NBTExtractionOperator implements IOperator {
             if (input.length == 1) {
                 IValue value = input[0].getValue();
                 if (value instanceof ValueNbt) {
-                    INBT extracted =
+                    Tag extracted =
                         this.extractionPath.extract(((ValueNbt) value).getRawValue().orElse(null));
                     if (extracted != null) {
                         return NBTValueConverter.mapNBTToValueType(extracted);
@@ -127,7 +127,7 @@ public class NBTExtractionOperator implements IOperator {
         if (input.length == 1) {
             IValue value = input[0].getValue();
             if (value instanceof ValueNbt) {
-                INBT extracted =
+                Tag extracted =
                     this.extractionPath.extract(((ValueNbt) value).getRawValue().orElse(null));
                 if (extracted != null) {
                     return NBTValueConverter.mapNBTToValue(extracted);
@@ -143,30 +143,30 @@ public class NBTExtractionOperator implements IOperator {
     }
 
     @Override
-    public IFormattableTextComponent validateTypes(IValueType[] input) {
+    public MutableComponent validateTypes(IValueType[] input) {
         if (input.length != 1) {
-            return new TranslationTextComponent(
+            return new TranslatableComponent(
                 L10NValues.OPERATOR_ERROR_WRONGINPUTLENGTH,
-                new TranslationTextComponent("integratednbt:nbt_extraction_operator.full_name"),
+                new TranslatableComponent("integratednbt:nbt_extraction_operator.full_name"),
                 input.length,
                 1
             );
         }
         IValueType<?> inputType = input[0];
         if (inputType == null) {
-            return new TranslationTextComponent(
+            return new TranslatableComponent(
                 L10NValues.OPERATOR_ERROR_NULLTYPE,
-                new TranslationTextComponent("integratednbt:nbt_extraction_operator.full_name"),
+                new TranslatableComponent("integratednbt:nbt_extraction_operator.full_name"),
                 "0"
             );
         }
         if (!ValueHelpers.correspondsTo(ValueTypes.NBT, inputType)) {
-            return new TranslationTextComponent(
+            return new TranslatableComponent(
                 L10NValues.OPERATOR_ERROR_WRONGTYPE,
-                new TranslationTextComponent("integratednbt:nbt_extraction_operator.full_name"),
-                new TranslationTextComponent(inputType.getTranslationKey()),
+                new TranslatableComponent("integratednbt:nbt_extraction_operator.full_name"),
+                new TranslatableComponent(inputType.getTranslationKey()),
                 "1",
-                new TranslationTextComponent(ValueTypes.NBT.getTranslationKey())
+                new TranslatableComponent(ValueTypes.NBT.getTranslationKey())
             );
         }
         return null;

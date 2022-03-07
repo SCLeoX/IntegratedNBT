@@ -1,12 +1,12 @@
 package me.tepis.integratednbt;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraftforge.fml.client.gui.GuiUtils;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 public class HoverTextImageButton extends ImageButton {
     private Screen gui;
 
-    private List<ITextComponent> hoverText;
+    private List<Component> hoverText;
 
     public HoverTextImageButton(
         Screen gui,
@@ -22,39 +22,37 @@ public class HoverTextImageButton extends ImageButton {
         TexturePart textureHover,
         int x,
         int y,
-        Button.IPressable onPress
+        Button.OnPress onPress
     ) {
         super(textureNormal, textureHover, x, y, onPress);
         this.gui = gui;
     }
 
-    public HoverTextImageButton(Screen gui, int x, int y, Button.IPressable onPress) {
+    public HoverTextImageButton(Screen gui, int x, int y, Button.OnPress onPress) {
         super(x, y, onPress);
         this.gui = gui;
     }
 
-    public void setHoverText(List<ITextComponent> hoverText) {
+    public void setHoverText(List<Component> hoverText) {
         this.hoverText = hoverText;
     }
 
     public void setHoverTextRaw(List<String> hoverText) {
-        this.hoverText = hoverText.stream().map(StringTextComponent::new).collect(Collectors.toList());
+        this.hoverText = hoverText.stream()
+            .map(TextComponent::new)
+            .collect(Collectors.toList());
     }
 
     /**
      * Draw hover text if is hovered
      */
-    public void drawHover(MatrixStack matrixStack, int mouseX, int mouseY) {
+    public void drawHover(PoseStack matrixStack, int mouseX, int mouseY) {
         if (this.isHovered) {
-            GuiUtils.drawHoveringText(
+            this.gui.renderTooltip(
                 matrixStack,
-                this.hoverText,
+                FontHelper.wrap(this.hoverText, 200),
                 mouseX,
-                mouseY,
-                this.gui.width,
-                this.gui.height,
-                240,
-                Minecraft.getInstance().fontRenderer // SensibleFontRenderer.get()
+                mouseY
             );
         }
     }

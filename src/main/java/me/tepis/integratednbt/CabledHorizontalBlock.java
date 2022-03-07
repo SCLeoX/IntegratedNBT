@@ -1,77 +1,79 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.HorizontalBlock;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Explosion;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.IWorldReader;
-import net.minecraft.world.World;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Explosion;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.Level;
 import org.cyclops.cyclopscore.helper.InventoryHelpers;
-import org.cyclops.cyclopscore.helper.TileHelpers;
+import org.cyclops.cyclopscore.helper.BlockEntityHelpers;
 import org.cyclops.integrateddynamics.core.helper.CableHelpers;
 import org.cyclops.integrateddynamics.core.helper.NetworkHelpers;
-import org.cyclops.integrateddynamics.core.tileentity.TileCableConnectableInventory;
+import org.cyclops.integrateddynamics.core.blockentity.BlockEntityCableConnectableInventory;
 
 import javax.annotation.Nonnull;
 import java.util.Collection;
 
-public abstract class CabledHorizontalBlock extends HorizontalBlock {
+import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
+
+public abstract class CabledHorizontalBlock extends HorizontalDirectionalBlock {
     public CabledHorizontalBlock(Properties properties) {
         super(properties);
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public void onBlockAdded(
+    public void onPlace(
         BlockState blockState,
-        World world,
+        Level world,
         BlockPos blockPos,
         BlockState oldState,
         boolean isMoving
     ) {
-        super.onBlockAdded(blockState, world, blockPos, oldState, isMoving);
-        if (!world.isRemote()) {
+        super.onPlace(blockState, world, blockPos, oldState, isMoving);
+        if (!world.isClientSide()) {
             CableHelpers.onCableAdded(world, blockPos);
         }
     }
 
     @Override
-    public void onBlockPlacedBy(
-        World world,
+    public void setPlacedBy(
+        Level world,
         BlockPos pos,
         BlockState state,
         LivingEntity placer,
         ItemStack itemStack
     ) {
-        if (!world.isRemote) {
+        if (!world.isClientSide) {
             CableHelpers.onCableAddedByPlayer(world, pos, placer);
         }
     }
 
     @Override
-    public void onPlayerDestroy(
-        IWorld world,
+    public void destroy(
+        LevelAccessor world,
         @Nonnull BlockPos blockPos,
         @Nonnull BlockState blockState
     ) {
-        CableHelpers.onCableRemoving((World) world, blockPos, true, false);
+        CableHelpers.onCableRemoving((Level) world, blockPos, true, false);
         Collection<Direction> connectedCables = CableHelpers.getExternallyConnectedCables(
-            (World) world,
+            (Level) world,
             blockPos
         );
-        super.onPlayerDestroy(world, blockPos, blockState);
-        CableHelpers.onCableRemoved((World) world, blockPos, connectedCables);
+        super.destroy(world, blockPos, blockState);
+        CableHelpers.onCableRemoved((Level) world, blockPos, connectedCables);
     }
 
     @Override
     public void onBlockExploded(
         BlockState blockState,
-        World world,
+        Level world,
         @Nonnull BlockPos blockPos,
         @Nonnull Explosion explosion
     ) {
@@ -88,7 +90,7 @@ public abstract class CabledHorizontalBlock extends HorizontalBlock {
     @Override
     public void neighborChanged(
         BlockState state,
-        World world,
+        Level world,
         BlockPos pos,
         Block neighborBlock,
         BlockPos fromPos,
@@ -107,14 +109,14 @@ public abstract class CabledHorizontalBlock extends HorizontalBlock {
     @Override
     public void onNeighborChange(
         BlockState state,
-        IWorldReader world,
+        LevelReader world,
         BlockPos pos,
         BlockPos neighbor
     ) {
         super.onNeighborChange(state, world, pos, neighbor);
-        if (world instanceof World) {
+        if (world instanceof Level) {
             NetworkHelpers.onElementProviderBlockNeighborChange(
-                (World) world,
+                (Level) world,
                 pos,
                 world.getBlockState(neighbor).getBlock(),
                 null,
@@ -124,40 +126,16 @@ public abstract class CabledHorizontalBlock extends HorizontalBlock {
     }
 
     @Override
-    public void observedNeighborChange(
-        BlockState observerState,
-        World world,
-        BlockPos observerPos,
-        Block changedBlock,
-        BlockPos changedBlockPos
-    ) {
-        super.observedNeighborChange(
-            observerState,
-            world,
-            observerPos,
-            changedBlock,
-            changedBlockPos
-        );
-        NetworkHelpers.onElementProviderBlockNeighborChange(
-            world,
-            observerPos,
-            changedBlock,
-            null,
-            changedBlockPos
-        );
-    }
-
-    @Override
     @SuppressWarnings("deprecation")
-    public void onReplaced(
+    public void onRemove(
         BlockState oldState,
-        @Nonnull World world,
+        @Nonnull Level world,
         @Nonnull BlockPos blockPos,
         BlockState newState,
         boolean isMoving
     ) {
         if (oldState.getBlock() != newState.getBlock()) {
-            TileHelpers.getSafeTile(world, blockPos, TileCableConnectableInventory.class)
+            BlockEntityHelpers.get(world, blockPos, BlockEntityCableConnectableInventory.class)
                 .ifPresent(tile -> InventoryHelpers.dropItems(
                     world,
                     tile.getInventory(),
@@ -169,10 +147,10 @@ public abstract class CabledHorizontalBlock extends HorizontalBlock {
                     world,
                     blockPos
                 );
-                super.onReplaced(oldState, world, blockPos, newState, isMoving);
+                super.onRemove(oldState, world, blockPos, newState, isMoving);
                 CableHelpers.onCableRemoved(world, blockPos, connectedCables);
             } else {
-                super.onReplaced(oldState, world, blockPos, newState, isMoving);
+                super.onRemove(oldState, world, blockPos, newState, isMoving);
             }
         }
     }

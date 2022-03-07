@@ -1,26 +1,26 @@
 package me.tepis.integratednbt;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import me.tepis.integratednbt.network.PacketHandler;
 import me.tepis.integratednbt.network.clientbound.NBTExtractorUpdateClientMessage.ErrorCode;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateAutoRefreshMessage;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateExtractionPathMessage;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateOutputModeMessage;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.nbt.INBT;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.Style;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraftforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,11 +28,7 @@ import java.util.Arrays;
 import static org.lwjgl.opengl.GL11.GL_SCISSOR_TEST;
 import static org.lwjgl.opengl.GL11.glDisable;
 import static org.lwjgl.opengl.GL11.glEnable;
-import static org.lwjgl.opengl.GL11.glPopMatrix;
-import static org.lwjgl.opengl.GL11.glPushMatrix;
-import static org.lwjgl.opengl.GL11.glScaled;
 import static org.lwjgl.opengl.GL11.glScissor;
-import static org.lwjgl.opengl.GL11.glTranslated;
 
 @OnlyIn(Dist.CLIENT)
 public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorContainer> {
@@ -101,15 +97,15 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
     private static NBTExtractorScreen lastInstance = null;
     // Null signify that the first update packet has not arrived yet.
     private static ErrorCode errorCode = null;
-    private static INBT nbt;
+    private static Tag nbt;
     private static NBTPath extractionPath = null;
     private static NBTExtractorOutputMode outputMode = null;
-    private static ITextComponent errorMessage = null;
+    private static Component errorMessage = null;
     private static Boolean autoRefresh = null;
 
     private NBTTreeViewer treeViewer;
     private NBTExtractorContainer nbtExtractorContainer;
-    private FontRenderer fontRenderer = Minecraft.getInstance().fontRenderer;
+    private Font fontRenderer = Minecraft.getInstance().font;
     /**
      * Padding outside the GUI; Responsive; Updated by updateCalculations
      */
@@ -131,25 +127,25 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
 
     public NBTExtractorScreen(
         NBTExtractorContainer screenContainer,
-        PlayerInventory inventory,
-        ITextComponent title
+        Inventory inventory,
+        Component title
     ) {
         super(screenContainer, inventory, title);
         NBTExtractorScreen.lastInstance = this;
         this.nbtExtractorContainer = screenContainer;
-        NBTExtractorTileEntity tileEntity = this.nbtExtractorContainer.getNbtExtractorEntity();
+        NBTExtractorBE tileEntity = this.nbtExtractorContainer.getNbtExtractorEntity();
         this.treeViewer = new NBTTreeViewer(
             this,
             tileEntity.getExpandedPaths(),
             tileEntity.getScrollTop()
         ) {
             @Override
-            public void onUpdateSelectedPath(NBTPath newPath, INBT nbt) {
+            public void onUpdateSelectedPath(NBTPath newPath, Tag nbt) {
                 PacketHandler.INSTANCE.send(
                     PacketDistributor.SERVER.noArg(),
                     new NBTExtractorUpdateExtractionPathMessage(
                         NBTExtractorScreen.this.nbtExtractorContainer.getNbtExtractorEntity()
-                            .getPos(),
+                            .getBlockPos(),
                         newPath,
                         nbt.getId()
                     )
@@ -167,7 +163,7 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         NBTExtractorScreen.errorCode = errorCode;
     }
 
-    public static void updateNBT(INBT nbt) {
+    public static void updateNBT(Tag nbt) {
         NBTExtractorScreen.nbt = nbt;
     }
 
@@ -186,43 +182,43 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         if (this.outputModeButton == null) {
             return;
         }
-        ArrayList<ITextComponent> messages = new ArrayList<>();
+        ArrayList<Component> messages = new ArrayList<>();
         if (outputMode == null) {
             this.outputModeButton.setTexture(
                 BUTTON_UNKNOWN,
                 BUTTON_UNKNOWN_HOVER
             );
-            messages.add(new TranslationTextComponent(
+            messages.add(new TranslatableComponent(
                 "integratednbt:nbt_extractor.output_mode",
-                new TranslationTextComponent("integratednbt:nbt_extractor.loading")
+                new TranslatableComponent("integratednbt:nbt_extractor.loading")
             ));
         } else {
             this.outputModeButton.setTexture(
                 outputMode.getButtonTextureNormal(),
                 outputMode.getButtonTextureHover()
             );
-            messages.add(new TranslationTextComponent(
+            messages.add(new TranslatableComponent(
                 "integratednbt:nbt_extractor.output_mode",
                 outputMode.getName()
             ));
         }
-        messages.add(new TranslationTextComponent(
-            "integratednbt:nbt_extractor.output_mode.description.begin").setStyle(Style.EMPTY.setFormatting(
-            TextFormatting.GRAY)));
-        messages.add(new StringTextComponent(""));
+        messages.add(new TranslatableComponent(
+            "integratednbt:nbt_extractor.output_mode.description.begin").setStyle(Style.EMPTY.withColor(
+            ChatFormatting.GRAY)));
+        messages.add(new TextComponent(" "));
         Arrays.stream(NBTExtractorOutputMode.values())
             .forEach(describingOutputMode -> messages.add(describingOutputMode.getDescription(
                 describingOutputMode.equals(outputMode))));
-        messages.add(new StringTextComponent(""));
-        messages.add(new TranslationTextComponent(
+        messages.add(new TextComponent(" "));
+        messages.add(new TranslatableComponent(
             "integratednbt:nbt_extractor.output_mode.description.end",
             NBTExtractorOutputMode.REFERENCE.getName()
-        ).setStyle(Style.EMPTY.setFormatting(
-            TextFormatting.GRAY)));
+        ).setStyle(Style.EMPTY.withColor(
+            ChatFormatting.GRAY)));
         this.outputModeButton.setHoverText(messages);
     }
 
-    public static void updateErrorMessage(ITextComponent errorMessage) {
+    public static void updateErrorMessage(Component errorMessage) {
         NBTExtractorScreen.errorMessage = errorMessage;
     }
 
@@ -243,30 +239,30 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
                 BUTTON_UNKNOWN,
                 BUTTON_UNKNOWN_HOVER
             );
-            messages.add(I18n.format(
+            messages.add(I18n.get(
                 "integratednbt:nbt_extractor.auto_refresh",
-                I18n.format("integratednbt:nbt_extractor.loading")
+                I18n.get("integratednbt:nbt_extractor.loading")
             ));
         } else if (autoRefresh) {
             this.autoRefreshButton.setTexture(
                 BUTTON_REFRESH_ON,
                 BUTTON_REFRESH_ON_HOVER
             );
-            messages.add(I18n.format(
+            messages.add(I18n.get(
                 "integratednbt:nbt_extractor.auto_refresh",
-                I18n.format("integratednbt:nbt_extractor.auto_refresh.on")
+                I18n.get("integratednbt:nbt_extractor.auto_refresh.on")
             ));
         } else {
             this.autoRefreshButton.setTexture(
                 BUTTON_REFRESH_OFF,
                 BUTTON_REFRESH_OFF_HOVER
             );
-            messages.add(I18n.format(
+            messages.add(I18n.get(
                 "integratednbt:nbt_extractor.auto_refresh",
-                I18n.format("integratednbt:nbt_extractor.auto_refresh.off")
+                I18n.get("integratednbt:nbt_extractor.auto_refresh.off")
             ));
         }
-        messages.addAll(Arrays.asList(I18n.format(
+        messages.addAll(Arrays.asList(I18n.get(
             "integratednbt:nbt_extractor.auto_refresh.description").split("\\\\n")));
         this.autoRefreshButton.setHoverTextRaw(messages);
     }
@@ -285,12 +281,12 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
     @Override
     protected void init() {
         this.updateCalculations();
-        this.xSize = this.width - 2 * this.padding;
-        this.ySize = this.height - 2 * this.padding;
+        this.imageWidth = this.width - 2 * this.padding;
+        this.imageHeight = this.height - 2 * this.padding;
         super.init();
         this.nbtExtractorContainer.setSlotOffset(
-            (this.xSize - INVENTORY_WIDTH) / 2,
-            this.ySize - INVENTORY_HEIGHT
+            (this.imageWidth - INVENTORY_WIDTH) / 2,
+            this.imageHeight - INVENTORY_HEIGHT
         );
         this.treeViewer.updateBounds(
             this.padding + SIDE_BORDER_SIZE,
@@ -305,7 +301,7 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
             this::onOutputModeButtonClick
         );
         this.updateOutputModeButton();
-        this.addButton(this.outputModeButton);
+        this.addWidget(this.outputModeButton);
         this.autoRefreshButton = new HoverTextImageButton(
             this,
             this.width - this.padding - 7 - BUTTON_SIZE * 2 - BUTTON_SPACING,
@@ -313,14 +309,14 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
             this::onAutoRefreshButtonClick
         );
         this.updateAutoRefreshButton();
-        this.addButton(this.autoRefreshButton);
+        this.addWidget(this.autoRefreshButton);
     }
 
     /**
      * Update
      */
     private void updateCalculations() {
-        this.scaleFactor = Minecraft.getInstance().getMainWindow().getGuiScaleFactor();
+        this.scaleFactor = Minecraft.getInstance().getWindow().getGuiScale();
         this.padding = (int) Math.min(
             Math.max(BASE_PADDING / Math.pow(this.scaleFactor, 3), 4),
             Math.min(this.width, this.height) / 10.
@@ -336,7 +332,7 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         PacketHandler.INSTANCE.send(
             PacketDistributor.SERVER.noArg(),
             new NBTExtractorUpdateOutputModeMessage(
-                this.nbtExtractorContainer.getNbtExtractorEntity().getPos(),
+                this.nbtExtractorContainer.getNbtExtractorEntity().getBlockPos(),
                 NBTExtractorOutputMode.values()[(outputMode.ordinal() + 1) %
                     NBTExtractorOutputMode.values().length]
             )
@@ -350,7 +346,7 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         PacketHandler.INSTANCE.send(
             PacketDistributor.SERVER.noArg(),
             new NBTExtractorUpdateAutoRefreshMessage(
-                this.nbtExtractorContainer.getNbtExtractorEntity().getPos(),
+                this.nbtExtractorContainer.getNbtExtractorEntity().getBlockPos(),
                 !autoRefresh
             )
         );
@@ -370,24 +366,26 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
     }
 
     @Override
-    protected void drawGuiContainerForegroundLayer(MatrixStack matrixStack, int mouseX, int mouseY) {
+    protected void renderLabels(PoseStack matrixStack, int mouseX, int mouseY) {
         this.outputModeButton.drawHover(matrixStack, mouseX, mouseY);
         this.autoRefreshButton.drawHover(matrixStack, mouseX, mouseY);
     }
 
     @Override
-    public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+    public void render(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
         this.renderBackground(matrixStack);
         super.render(matrixStack, mouseX, mouseY, partialTicks);
-        this.renderHoveredTooltip(matrixStack, mouseX, mouseY);
+        this.outputModeButton.render(matrixStack, mouseX, mouseY, partialTicks);
+        this.autoRefreshButton.render(matrixStack, mouseX, mouseY, partialTicks);
+        this.renderTooltip(matrixStack, mouseX, mouseY);
     }
 
     @Override
-    protected void drawGuiContainerBackgroundLayer(MatrixStack matrixStack, float partialTicks, int mouseX, int mouseY) {
+    protected void renderBg(PoseStack matrixStack, float partialTicks, int mouseX, int mouseY) {
         this.renderGuiParts(matrixStack);
-        this.fontRenderer.drawString(
+        this.fontRenderer.draw(
             matrixStack,
-            I18n.format("block.integratednbt.nbt_extractor"),
+            I18n.get("block.integratednbt.nbt_extractor"),
             this.padding + 8,
             this.padding + 9,
             4210752
@@ -402,7 +400,7 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
             (int) this.scaleFactor * this.screenHeight
         );
         Slot srcNBTSlot = this.nbtExtractorContainer.getSrcNBTSlot();
-        if (!srcNBTSlot.getHasStack()) {
+        if (!srcNBTSlot.hasItem()) {
             errorCode = null;
             this.renderWelcome(matrixStack);
         } else if (errorCode == null) {
@@ -416,7 +414,7 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
     }
 
     @Override
-    public void onClose() {
+    public void removed() {
         if (lastInstance == this) {
             lastInstance = null;
             errorCode = null;
@@ -425,7 +423,7 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
             outputMode = null;
             errorMessage = null;
         }
-        super.onClose();
+        super.removed();
     }
 
     @Override
@@ -433,24 +431,26 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         return false;
     }
 
-    private void renderGuiParts(MatrixStack matrixStack) {
+    private void renderGuiParts(PoseStack matrixStack) {
         int padding = this.padding;
         int screenWidth = this.screenWidth;
         int screenHeight = this.screenHeight;
         GUI_TEXTURE.bind();
         PART0.renderTo(this, matrixStack, padding, padding);
-        PART1.renderTo(this, padding + SIDE_BORDER_SIZE, padding, screenWidth, -1);
+        PART1.renderToScaled(this, matrixStack, padding + SIDE_BORDER_SIZE, padding, screenWidth, -1);
         PART2.renderTo(this, matrixStack, this.width - padding - SIDE_BORDER_SIZE, padding);
-        PART3.renderTo(this, padding, padding + TOP_BORDER_SIZE, -1, screenHeight);
-        PART4.renderTo(
+        PART3.renderToScaled(this, matrixStack, padding, padding + TOP_BORDER_SIZE, -1, screenHeight);
+        PART4.renderToScaled(
             this,
+            matrixStack,
             padding + SIDE_BORDER_SIZE,
             padding + TOP_BORDER_SIZE,
             screenWidth,
             screenHeight
         );
-        PART5.renderTo(
+        PART5.renderToScaled(
             this,
+            matrixStack,
             this.width - padding - SIDE_BORDER_SIZE,
             padding + TOP_BORDER_SIZE,
             -1,
@@ -461,8 +461,9 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         int part7Width2x = this.width - 2 * padding - 2 * SIDE_BORDER_SIZE - INVENTORY_WIDTH;
         int part7WidthFloor = (int) Math.floor(part7Width2x / 2.0);
         int part7WidthCeil = (int) Math.ceil(part7Width2x / 2.0);
-        PART7.renderTo(
+        PART7.renderToScaled(
             this,
+            matrixStack,
             padding + SIDE_BORDER_SIZE,
             topOfPart6789,
             part7WidthFloor,
@@ -474,8 +475,9 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
             padding + SIDE_BORDER_SIZE + part7WidthFloor,
             topOfPart6789
         );
-        PART7.renderTo(
+        PART7.renderToScaled(
             this,
+            matrixStack,
             padding + SIDE_BORDER_SIZE + part7WidthFloor + INVENTORY_WIDTH,
             topOfPart6789,
             part7WidthCeil,
@@ -489,82 +491,82 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         );
     }
 
-    private void renderWelcome(MatrixStack matrixStack) {
+    private void renderWelcome(PoseStack matrixStack) {
         this.renderCenteredTextGroup(
             matrixStack,
-            I18n.format("integratednbt:nbt_extractor.welcome"),
+            I18n.get("integratednbt:nbt_extractor.welcome"),
             0x00FFFF,
-            I18n.format("integratednbt:nbt_extractor.welcome.description")
+            I18n.get("integratednbt:nbt_extractor.welcome.description")
         );
     }
 
-    private void renderLoading(MatrixStack matrixStack) {
+    private void renderLoading(PoseStack matrixStack) {
         this.renderCenteredTextGroup(
             matrixStack,
-            I18n.format("integratednbt:nbt_extractor.loading"),
+            I18n.get("integratednbt:nbt_extractor.loading"),
             0xFFFF00,
-            I18n.format("integratednbt:nbt_extractor.loading.description")
+            I18n.get("integratednbt:nbt_extractor.loading.description")
         );
     }
 
-    private void renderError(MatrixStack matrixStack) {
+    private void renderError(PoseStack matrixStack) {
         String message = "";
         if (errorMessage != null) {
             message = errorMessage.getString();
         } else {
             switch (errorCode) {
                 case EVAL_ERROR:
-                    message = I18n.format("integratednbt:nbt_extractor.error.eval");
+                    message = I18n.get("integratednbt:nbt_extractor.error.eval");
                     break;
                 case TYPE_ERROR:
-                    message = I18n.format("integratednbt:nbt_extractor.error.type");
+                    message = I18n.get("integratednbt:nbt_extractor.error.type");
                     break;
                 case UNEXPECTED_ERROR:
-                    message = I18n.format("integratednbt:nbt_extractor.error.unexpected");
+                    message = I18n.get("integratednbt:nbt_extractor.error.unexpected");
                     break;
             }
         }
         this.renderCenteredTextGroup(
             matrixStack,
-            I18n.format("integratednbt:nbt_extractor.error"),
+            I18n.get("integratednbt:nbt_extractor.error"),
             0xFF5555,
             message
         );
     }
 
-    private void renderCenteredTextGroup(MatrixStack matrixStack, String title, int titleColor, String description) {
-        glPushMatrix();
+    private void renderCenteredTextGroup(PoseStack matrixStack, String title, int titleColor, String description) {
+        matrixStack.pushPose();
         try {
             int x = this.screenCenterX();
             int y = this.screenCenterY();
-            int titleWidth = this.fontRenderer.getStringWidth(title);
-            glPushMatrix();
+            int titleWidth = this.fontRenderer.width(title);
+            matrixStack.pushPose();
             try {
-                this.scaleAt(x, y, 2);
-                this.fontRenderer.drawString(
+                this.scaleAt(matrixStack, x, y, 2);
+                this.fontRenderer.draw(
                     matrixStack,
                     title,
                     -titleWidth / 2f,
-                    -this.fontRenderer.FONT_HEIGHT - 1,
+                    -this.fontRenderer.lineHeight - 1,
                     titleColor
                 );
             } finally {
-                glPopMatrix();
+                matrixStack.popPose();
             }
-            this.scaleAt(x, y, 1);
+            this.scaleAt(matrixStack, x, y, 1);
             int wrappingWidth = (int) (this.screenWidth * CENTERED_TEXT_MAX_RATIO);
-            int descriptionWidth = this.fontRenderer.getStringWidth(description);
+            int descriptionWidth = this.fontRenderer.width(description);
             if (descriptionWidth > wrappingWidth) {
                 // this.fontRenderer.drawSplitString(
-                this.fontRenderer.func_238418_a_(
-                    new StringTextComponent(description),
+                this.fontRenderer.drawWordWrap(
+                    new TextComponent(description),
                     -wrappingWidth / 2,
                     4,
                     wrappingWidth,
                     0xFFFFFF
                 );
             } else {
-                this.fontRenderer.drawString(
+                this.fontRenderer.draw(
                     matrixStack,
                     description,
                     -descriptionWidth / 2f,
@@ -573,7 +575,7 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
                 );
             }
         } finally {
-            glPopMatrix();
+            matrixStack.popPose();
         }
     }
 
@@ -585,8 +587,8 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         return this.padding + TOP_BORDER_SIZE + this.screenHeight / 2;
     }
 
-    private void scaleAt(int x, int y, double scale) {
-        glScaled(scale, scale, 1d);
-        glTranslated(x / scale, y / scale, 0d);
+    private void scaleAt(PoseStack poseStack, int x, int y, float scale) {
+        poseStack.scale(scale, scale, 1f);
+        poseStack.translate(x / scale, y / scale, 0f);
     }
 }

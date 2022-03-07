@@ -1,8 +1,8 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
 
 public abstract class Integration {
     public static boolean isVariable(ItemStack itemStack) {

@@ -1,9 +1,9 @@
 package me.tepis.integratednbt.network.serverbound;
 
-import me.tepis.integratednbt.NBTExtractorTileEntity;
+import me.tepis.integratednbt.NBTExtractorBE;
 import me.tepis.integratednbt.NBTPath;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.core.BlockPos;
 
 /**
  * From client to server;
@@ -15,7 +15,7 @@ public class NBTExtractorUpdateExtractionPathMessage extends NBTExtractorUpdateS
         @Override
         public void updateTileEntity(
             NBTExtractorUpdateExtractionPathMessage message,
-            NBTExtractorTileEntity nbtExtractorTileEntity
+            NBTExtractorBE nbtExtractorTileEntity
         ) {
             nbtExtractorTileEntity.setExtractionPath(message.path);
             nbtExtractorTileEntity.setDefaultNBTId(message.defaultNBTId);
@@ -48,16 +48,16 @@ public class NBTExtractorUpdateExtractionPathMessage extends NBTExtractorUpdateS
     private NBTExtractorUpdateExtractionPathMessage() {}
 
     @Override
-    public void fromBytes(PacketBuffer buf) {
+    public void fromBytes(FriendlyByteBuf buf) {
         super.fromBytes(buf);
-        this.path = NBTPath.fromNBT(buf.readCompoundTag()).orElse(new NBTPath());
+        this.path = NBTPath.fromNBT(buf.readNbt()).orElse(new NBTPath());
         this.defaultNBTId = buf.readByte();
     }
 
     @Override
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(FriendlyByteBuf buf) {
         super.toBytes(buf);
-        buf.writeCompoundTag(this.path.toNBTCompound());
+        buf.writeNbt(this.path.toNBTCompound());
         buf.writeByte(this.defaultNBTId);
     }
 }

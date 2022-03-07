@@ -1,6 +1,6 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.client.gui.ScreenManager;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DeferredWorkQueue;
@@ -11,9 +11,8 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
     Dist.CLIENT)
 public final class ClientModEventSubscriber {
     @SubscribeEvent
-    @SuppressWarnings("deprecation")
     public static void onFMLClientSetupEvent(final FMLClientSetupEvent event) {
-        DeferredWorkQueue.runLater(() -> ScreenManager.registerFactory(
+        event.enqueueWork(() -> MenuScreens.register(
             Additions.NBT_EXTRACTOR_CONTAINER.get(),
             NBTExtractorScreen::new
         ));

@@ -1,13 +1,13 @@
 package me.tepis.integratednbt;
 
 
-import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.INBT;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.Style;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.TranslatableComponent;
 import org.cyclops.integrateddynamics.IntegratedDynamics;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.item.IValueTypeVariableFacade;
@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 public enum NBTExtractorOutputMode {
     REFERENCE(
         "reference",
-        TextFormatting.YELLOW,
+        ChatFormatting.YELLOW,
         Nest.GUI_TEXTURE.createPart(90, 0, Nest.BUTTON_SIZE, Nest.BUTTON_SIZE),
         Nest.GUI_TEXTURE.createPart(90, 12, Nest.BUTTON_SIZE, Nest.BUTTON_SIZE)
     ) {
@@ -33,7 +33,7 @@ public enum NBTExtractorOutputMode {
         public ItemStack writeItemStack(
             Supplier<IVariableFacade> sourceVariableFacadeSupplier,
             ItemStack outputVariableItemStack,
-            INBT currentNBT,
+            Tag currentNBT,
             NBTPath extractionPath,
             byte defaultNBTId,
             BlockState blockState
@@ -81,7 +81,7 @@ public enum NBTExtractorOutputMode {
     },
     OPERATOR(
         "operator",
-        TextFormatting.DARK_GREEN,
+        ChatFormatting.DARK_GREEN,
         Nest.GUI_TEXTURE.createPart(102, 0, Nest.BUTTON_SIZE, Nest.BUTTON_SIZE),
         Nest.GUI_TEXTURE.createPart(102, 12, Nest.BUTTON_SIZE, Nest.BUTTON_SIZE)
     ) {
@@ -89,7 +89,7 @@ public enum NBTExtractorOutputMode {
         public ItemStack writeItemStack(
             Supplier<IVariableFacade> sourceVariableFacadeSupplier,
             ItemStack outputVariableItemStack,
-            INBT currentNBT,
+            Tag currentNBT,
             NBTPath extractionPath,
             byte defaultNBTId,
             BlockState blockState
@@ -102,7 +102,7 @@ public enum NBTExtractorOutputMode {
     },
     VALUE(
         "value",
-        TextFormatting.GOLD,
+        ChatFormatting.GOLD,
         Nest.GUI_TEXTURE.createPart(114, 0, Nest.BUTTON_SIZE, Nest.BUTTON_SIZE),
         Nest.GUI_TEXTURE.createPart(114, 12, Nest.BUTTON_SIZE, Nest.BUTTON_SIZE)
     ) {
@@ -110,13 +110,13 @@ public enum NBTExtractorOutputMode {
         public ItemStack writeItemStack(
             Supplier<IVariableFacade> sourceVariableFacadeSupplier,
             ItemStack outputVariableItemStack,
-            INBT currentNBT,
+            Tag currentNBT,
             NBTPath extractionPath,
             byte defaultNBTId,
             BlockState blockState
         ) {
             sourceVariableFacadeSupplier.get(); // Refresh variable
-            INBT extractedNBT = extractionPath.extract(currentNBT);
+            Tag extractedNBT = extractionPath.extract(currentNBT);
             IValue value = extractedNBT == null
                 ? NBTValueConverter.getDefaultValue(defaultNBTId)
                 : NBTValueConverter.mapNBTToValue(extractedNBT);
@@ -125,7 +125,7 @@ public enum NBTExtractorOutputMode {
     },
     NBT_PATH(
         "nbt_path",
-        TextFormatting.RED,
+        ChatFormatting.RED,
         Nest.GUI_TEXTURE.createPart(150, 0, Nest.BUTTON_SIZE, Nest.BUTTON_SIZE),
         Nest.GUI_TEXTURE.createPart(150, 12, Nest.BUTTON_SIZE, Nest.BUTTON_SIZE)
     ) {
@@ -133,7 +133,7 @@ public enum NBTExtractorOutputMode {
         public ItemStack writeItemStack(
             Supplier<IVariableFacade> sourceVariableFacadeSupplier,
             ItemStack outputVariableItemStack,
-            INBT currentNBT,
+            Tag currentNBT,
             NBTPath extractionPath,
             byte defaultNBTId,
             BlockState blockState
@@ -155,13 +155,13 @@ public enum NBTExtractorOutputMode {
     }
 
     private String translationId;
-    private TextFormatting color;
+    private ChatFormatting color;
     private TexturePart buttonTextureNormal;
     private TexturePart buttonTextureHover;
 
     NBTExtractorOutputMode(
         String translationId,
-        TextFormatting color,
+        ChatFormatting color,
         TexturePart buttonTextureNormal,
         TexturePart buttonTextureHover
     ) {
@@ -214,24 +214,24 @@ public enum NBTExtractorOutputMode {
     public abstract ItemStack writeItemStack(
         Supplier<IVariableFacade> sourceVariableFacadeSupplier,
         ItemStack outputVariableItemStack,
-        INBT currentNBT,
+        Tag currentNBT,
         NBTPath extractionPath,
         byte defaultNBTId,
         BlockState blockState
     );
 
-    public ITextComponent getDescription(boolean highlighted) {
-        return new TranslationTextComponent(
+    public Component getDescription(boolean highlighted) {
+        return new TranslatableComponent(
             "integratednbt:nbt_extractor.output_mode." + this.translationId + ".description",
             this.getName()
         ).setStyle(highlighted
-            ? Style.EMPTY.setFormatting(TextFormatting.GRAY)
-            : Style.EMPTY.setFormatting(TextFormatting.DARK_GRAY));
+            ? Style.EMPTY.withColor(ChatFormatting.GRAY)
+            : Style.EMPTY.withColor(ChatFormatting.DARK_GRAY));
     }
 
-    public ITextComponent getName() {
-        return new TranslationTextComponent(
+    public Component getName() {
+        return new TranslatableComponent(
             "integratednbt:nbt_extractor.output_mode." + this.translationId + ".name"
-        ).setStyle(Style.EMPTY.setFormatting(this.color));
+        ).setStyle(Style.EMPTY.withColor(this.color));
     }
 }

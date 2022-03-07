@@ -1,9 +1,9 @@
 package me.tepis.integratednbt.network;
 
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.FriendlyByteBuf;
 
 public interface Message {
-    void fromBytes(PacketBuffer buf);
+    void fromBytes(FriendlyByteBuf buf);
 
-    void toBytes(PacketBuffer buf);
+    void toBytes(FriendlyByteBuf buf);
 }

@@ -1,23 +1,27 @@
 buildscript {
     repositories {
-        maven { url = 'https://files.minecraftforge.net/maven' }
-        jcenter()
         mavenCentral()
+        maven { url = 'https://maven.minecraftforge.net' }
     }
     dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
     }
 }
 apply plugin: 'net.minecraftforge.gradle'
 // Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
-apply plugin: 'eclipse'
+apply plugin: 'idea'
 apply plugin: 'maven-publish'
+apply from: 'https://raw.githubusercontent.com/SizableShrimp/Forge-Class-Remapper/main/classremapper.gradle'
 
-version = "1.4.2"
+
+version = "1.5.0"
 group = "me.tepis.integratednbt" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "integratednbt"
 
-sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
+configurations {
+    modLib
+    implementation.extendsFrom modLib
+}
 
 minecraft {
     // The mappings can be changed at any time, and must be in the following format.
@@ -25,7 +29,9 @@ minecraft {
     // stable_#            Stables are built at the discretion of the MCP team.
     // Use non-default mappings at your own risk. they may not always work.
     // Simply re-run your setup task after changing the mappings to update your workspace.
-    mappings channel: 'snapshot', version: '20201028-1.16.3'
+//    mappings channel: 'snapshot', version: '20201028-1.16.3'
+//    mappings channel: 'official', version: '1.16.5'
+    mappings channel: 'official', version: '1.18.1'
     // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
 
     accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
@@ -47,6 +53,9 @@ minecraft {
                     source sourceSets.main
                 }
             }
+            lazyToken('minecraft_classpath') {
+                configurations.modLib.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
+            }
         }
 
         server {
@@ -62,6 +71,9 @@ minecraft {
                 examplemod {
                     source sourceSets.main
                 }
+            }
+            lazyToken('minecraft_classpath') {
+                configurations.modLib.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
             }
         }
 
@@ -81,23 +93,42 @@ minecraft {
                     source sourceSets.main
                 }
             }
+            lazyToken('minecraft_classpath') {
+                configurations.modLib.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
+            }
         }
     }
 }
 
 repositories {
-    maven { url = 'https://oss.jfrog.org/artifactory/simple/libs-release/' }
+    // Yeah, I have no idea what I am doing... It seems I need to get a GitHub Access token or something
+    // to access the maven repository. Maybe.
+    // I don't feel like doing that.
+    // I am just going to copy whatever the author of Integrated Proxy is doing
+    // a.k.a. download all the jars and put in the libs folder
+    flatDir {
+        dir 'libs'
+    }
 }
 
 dependencies {
     // Specify the version of Minecraft to use, If this is any group other then 'net.minecraft' it is assumed
     // that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
-    minecraft 'net.minecraftforge:forge:1.16.4-35.1.13'
+    minecraft 'net.minecraftforge:forge:1.18.1-39.0.8'
 
-    compile 'org.cyclops.integrateddynamics:IntegratedDynamics:1.16.4-1.1.20-1598:deobf'
-    compile 'org.cyclops.commoncapabilities:CommonCapabilities:1.16.4-2.5.4-371:deobf'
+    implementation fg.deobf('org.cyclops.integrateddynamics:IntegratedDynamics:1.18.1-1.10.10-212:deobf')
+    implementation fg.deobf('org.cyclops.commoncapabilities:CommonCapabilities:1.18.1-2.8.2-50:deobf')
+    implementation fg.deobf('org.cyclops.cyclopscore:CyclopsCore:1.18.1-1.13.0-125:deobf')
 
+    modLib "com.google.re2j:re2j:1.1"
+
+
+//    minecraft 'net.minecraftforge:forge:1.16.4-35.1.13'
+//
+//    implementation 'org.cyclops.integrateddynamics:IntegratedDynamics:1.16.4-1.1.21:deobf'
+//    implementation 'org.cyclops.commoncapabilities:CommonCapabilities:1.16.4-2.5.4:deobf'
+//    implementation 'org.cyclops.cyclopscore:CyclopsCore-1.16.4-1.11.1:deobf'
     // You may put jars on which you depend on in ./libs or you may define them like so..
     // compile "some.group:artifact:version:classifier"
     // compile "some.group:artifact:version"
@@ -119,19 +150,19 @@ dependencies {
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..
-jar {
-    manifest {
-        attributes([
-            "Specification-Title": "examplemod",
-            "Specification-Vendor": "examplemodsareus",
-            "Specification-Version": "1", // We are version 1 of ourselves
-            "Implementation-Title": project.name,
-            "Implementation-Version": "${version}",
-            "Implementation-Vendor" :"examplemodsareus",
-            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-        ])
-    }
-}
+//jar {
+//    manifest {
+//        attributes([
+//            "Specification-Title": "examplemod",
+//            "Specification-Vendor": "examplemodsareus",
+//            "Specification-Version": "1", // We are version 1 of ourselves
+//            "Implementation-Title": project.name,
+//            "Implementation-Version": "${version}",
+//            "Implementation-Vendor" :"examplemodsareus",
+//            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+//        ])
+//    }
+//}
 
 // Example configuration to allow publishing using the maven-publish task
 // This is the preferred method to reobfuscate your jar file

@@ -1,17 +1,17 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.nbt.ByteArrayNBT;
-import net.minecraft.nbt.ByteNBT;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.DoubleNBT;
-import net.minecraft.nbt.FloatNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.IntArrayNBT;
-import net.minecraft.nbt.IntNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.nbt.LongArrayNBT;
-import net.minecraft.nbt.LongNBT;
-import net.minecraft.nbt.ShortNBT;
+import net.minecraft.nbt.ByteArrayTag;
+import net.minecraft.nbt.ByteTag;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.DoubleTag;
+import net.minecraft.nbt.FloatTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.IntArrayTag;
+import net.minecraft.nbt.IntTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.LongArrayTag;
+import net.minecraft.nbt.LongTag;
+import net.minecraft.nbt.ShortTag;
 import org.apache.commons.lang3.ArrayUtils;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValueType;
@@ -28,7 +28,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public abstract class NBTValueConverter {
-    public static IValueType<? extends IValue> mapNBTToValueType(INBT nbt) {
+    public static IValueType<? extends IValue> mapNBTToValueType(Tag nbt) {
         return mapNBTIDToValueType(nbt.getId());
     }
 
@@ -102,36 +102,36 @@ public abstract class NBTValueConverter {
                 return ValueList.ofList(ValueTypes.CATEGORY_ANY, new ArrayList<>());
             case 10: // Compound
             default:
-                return ValueNbt.of(new CompoundNBT());
+                return ValueNbt.of(new CompoundTag());
         }
     }
 
-    public static IValue mapNBTToValue(INBT nbt) {
+    public static IValue mapNBTToValue(Tag nbt) {
         switch (nbt.getId()) {
             case 1: // Byte
-                return ValueInteger.of(((ByteNBT) nbt).getInt());
+                return ValueInteger.of(((ByteTag) nbt).getAsInt());
             case 2: // Short
-                return ValueInteger.of(((ShortNBT) nbt).getInt());
+                return ValueInteger.of(((ShortTag) nbt).getAsInt());
             case 3: // Int
-                return ValueInteger.of(((IntNBT) nbt).getInt());
+                return ValueInteger.of(((IntTag) nbt).getAsInt());
             case 4: // Long
-                return ValueLong.of(((LongNBT) nbt).getLong());
+                return ValueLong.of(((LongTag) nbt).getAsLong());
             case 5: // Float
-                return ValueDouble.of(((FloatNBT) nbt).getDouble());
+                return ValueDouble.of(((FloatTag) nbt).getAsDouble());
             case 6: // Double
-                return ValueDouble.of(((DoubleNBT) nbt).getDouble());
+                return ValueDouble.of(((DoubleTag) nbt).getAsDouble());
             case 7: // Byte Array
                 return ValueList.ofList(
                     ValueTypes.INTEGER,
-                    Arrays.stream(ArrayUtils.toObject(((ByteArrayNBT) nbt).getByteArray()))
+                    Arrays.stream(ArrayUtils.toObject(((ByteArrayTag) nbt).getAsByteArray()))
                         .map(ValueInteger::of)
                         .collect(Collectors.toList())
                 );
             case 8: // String
-                return ValueString.of(nbt.getString());
+                return ValueString.of(nbt.getAsString());
             case 9: // List
                 return ValueList.ofAll(
-                    ((ListNBT) nbt).stream()
+                    ((ListTag) nbt).stream()
                         .map(NBTValueConverter::mapNBTToValue)
                         .toArray(IValue[]::new)
                 );
@@ -140,14 +140,14 @@ public abstract class NBTValueConverter {
             case 11: // Int Array
                 return ValueList.ofList(
                     ValueTypes.INTEGER,
-                    Arrays.stream(ArrayUtils.toObject(((IntArrayNBT) nbt).getIntArray()))
+                    Arrays.stream(ArrayUtils.toObject(((IntArrayTag) nbt).getAsIntArray()))
                         .map(ValueInteger::of)
                         .collect(Collectors.toList())
                 );
             case 12: // Long Array
                 return ValueList.ofList(
                     ValueTypes.LONG,
-                    Arrays.stream(ArrayUtils.toObject(((LongArrayNBT) nbt).getAsLongArray()))
+                    Arrays.stream(ArrayUtils.toObject(((LongArrayTag) nbt).getAsLongArray()))
                         .map(ValueLong::of)
                         .collect(Collectors.toList())
                 );

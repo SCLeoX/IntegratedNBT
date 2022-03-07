@@ -1,7 +1,7 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import org.cyclops.integrateddynamics.api.item.IVariableFacadeHandler;
 
 import java.util.Optional;
@@ -26,7 +26,7 @@ public class NBTExtractedVariableFacadeHandler
     }
 
     @Override
-    public NBTExtractedVariableFacade getVariableFacade(int id, CompoundNBT tag) {
+    public NBTExtractedVariableFacade getVariableFacade(int id, CompoundTag tag) {
         int sourceNBTId = tag.getInt(KEY_SOURCE_NBT_ID);
         Optional<NBTPath> extractionPath = NBTPath.fromNBT(tag.get(KEY_EXTRACTION_PATH));
         byte defaultNBTId = tag.getByte(KEY_DEFAULT_NBT_ID);
@@ -39,7 +39,7 @@ public class NBTExtractedVariableFacadeHandler
     }
 
     @Override
-    public void setVariableFacade(CompoundNBT tag, NBTExtractedVariableFacade facade) {
+    public void setVariableFacade(CompoundTag tag, NBTExtractedVariableFacade facade) {
         tag.putInt(KEY_SOURCE_NBT_ID, facade.getSourceNBTId());
         tag.put(KEY_EXTRACTION_PATH, facade.getExtractionPath().toNBT());
         tag.putByte(KEY_DEFAULT_NBT_ID, facade.getDefaultNBTId());

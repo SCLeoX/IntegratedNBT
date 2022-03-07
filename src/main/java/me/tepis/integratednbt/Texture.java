@@ -1,7 +1,7 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.ResourceLocation;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.resources.ResourceLocation;
 
 public class Texture {
     private ResourceLocation resourceLocation;
@@ -15,7 +15,7 @@ public class Texture {
     }
 
     public void bind() {
-        Minecraft.getInstance().getTextureManager().bindTexture(this.resourceLocation);
+        RenderSystem.setShaderTexture(0, this.resourceLocation);
     }
 
     public TexturePart createPart(int x, int y, int width, int height) {

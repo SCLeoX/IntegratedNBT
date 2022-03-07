@@ -4,10 +4,10 @@ import me.tepis.integratednbt.Additions;
 import me.tepis.integratednbt.NBTExtractorRemote;
 import me.tepis.integratednbt.network.Message;
 import me.tepis.integratednbt.network.MessageHandler;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.Hand;
-import net.minecraftforge.fml.network.NetworkEvent.Context;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.InteractionHand;
+import net.minecraftforge.network.NetworkEvent.Context;
 
 import java.util.function.Supplier;
 
@@ -21,13 +21,13 @@ public class NBTExtractorRemoteRequestMessage implements Message {
         @Override
         public void onMessage(NBTExtractorRemoteRequestMessage message, Context ctx) {
             ctx.enqueueWork(() -> {
-                ServerPlayerEntity player = ctx.getSender();
+                ServerPlayer player = ctx.getSender();
                 NBTExtractorRemote remote = Additions.NBT_EXTRACTOR_REMOTE.get();
                 assert player != null;
-                if (player.getHeldItem(Hand.MAIN_HAND).getItem() == remote) {
-                    remote.serverUse(player.getHeldItem(Hand.MAIN_HAND), player);
-                } else if (player.getHeldItem(Hand.OFF_HAND).getItem() == remote) {
-                    remote.serverUse(player.getHeldItem(Hand.OFF_HAND), player);
+                if (player.getItemInHand(InteractionHand.MAIN_HAND).getItem() == remote) {
+                    remote.serverUse(player.getItemInHand(InteractionHand.MAIN_HAND), player);
+                } else if (player.getItemInHand(InteractionHand.OFF_HAND).getItem() == remote) {
+                    remote.serverUse(player.getItemInHand(InteractionHand.OFF_HAND), player);
                 }
             });
         }
@@ -44,8 +44,8 @@ public class NBTExtractorRemoteRequestMessage implements Message {
     }
 
     @Override
-    public void fromBytes(PacketBuffer buf) {}
+    public void fromBytes(FriendlyByteBuf buf) {}
 
     @Override
-    public void toBytes(PacketBuffer buf) {}
+    public void toBytes(FriendlyByteBuf buf) {}
 }

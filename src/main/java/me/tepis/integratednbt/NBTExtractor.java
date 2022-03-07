@@ -1,53 +1,59 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.InventoryHelper;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.state.StateContainer;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Mirror;
-import net.minecraft.util.Rotation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
-import net.minecraftforge.fml.network.NetworkHooks;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
+import net.minecraft.world.Containers;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.material.Material;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraftforge.network.NetworkHooks;
 import org.cyclops.integrateddynamics.core.helper.WrenchHelpers;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 
+import static me.tepis.integratednbt.Additions.NBT_EXTRACTOR_BE;
 import static me.tepis.integratednbt.Additions.NBT_EXTRACTOR_BLOCK;
 
-public class NBTExtractor extends CabledHorizontalBlock {
+public class NBTExtractor extends CabledHorizontalBlock implements EntityBlock {
     public static class NBTExtractorBlockItem extends BlockItem {
         public NBTExtractorBlockItem() {
-            super(NBT_EXTRACTOR_BLOCK.get(), new Item.Properties().group(ItemGroups.ITEM_GROUP));
+            super(NBT_EXTRACTOR_BLOCK.get(), new Item.Properties().tab(ItemGroups.ITEM_GROUP));
         }
 
         @Override
-        public void addInformation(
+        public void appendHoverText(
             @Nonnull ItemStack itemStack,
-            @Nullable World world,
-            @Nonnull List<ITextComponent> tooltip,
-            @Nonnull ITooltipFlag flag
+            @Nullable Level world,
+            @Nonnull List<Component> tooltip,
+            @Nonnull TooltipFlag flag
         ) {
-            super.addInformation(itemStack, world, tooltip, flag);
-            tooltip.add(new TranslationTextComponent("integratednbt:nbt_extractor.tooltip"));
+            super.appendHoverText(itemStack, world, tooltip, flag);
+            tooltip.add(new TranslatableComponent("integratednbt:nbt_extractor.tooltip"));
         }
     }
 
@@ -55,100 +61,99 @@ public class NBTExtractor extends CabledHorizontalBlock {
 
     public NBTExtractor(Properties properties) {
         super(properties);
-        this.setDefaultState(this.getDefaultState().with(HORIZONTAL_FACING, Direction.NORTH));
+        this.registerDefaultState(this.defaultBlockState().setValue(FACING, Direction.NORTH));
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        if (level.isClientSide) {
+            return null;
+        }
+        return type == NBT_EXTRACTOR_BE.get() ? NBTExtractorBE::tick : null;
     }
 
     @Override
-    protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder) {
-        super.fillStateContainer(builder);
-        builder.add(HORIZONTAL_FACING);
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+        builder.add(FACING);
     }
 
     @Override
-    public void onReplaced(
+    public void onRemove(
         BlockState oldState,
-        @Nonnull World worldIn,
+        @Nonnull Level worldIn,
         @Nonnull BlockPos pos,
         BlockState newState,
         boolean isMoving
     ) {
         if (oldState.getBlock() != newState.getBlock()) {
-            TileEntity tileEntity = worldIn.getTileEntity(pos);
-            if (tileEntity instanceof NBTExtractorTileEntity) {
-                IInventory inventory = (NBTExtractorTileEntity) tileEntity;
-                for (int slot = 0; slot < inventory.getSizeInventory(); ++slot) {
-                    InventoryHelper.spawnItemStack(
+            BlockEntity tileEntity = worldIn.getBlockEntity(pos);
+            if (tileEntity instanceof NBTExtractorBE) {
+                Container inventory = (NBTExtractorBE) tileEntity;
+                for (int slot = 0; slot < inventory.getContainerSize(); ++slot) {
+                    Containers.dropItemStack(
                         worldIn,
                         pos.getX(),
                         pos.getY(),
                         pos.getZ(),
-                        inventory.getStackInSlot(slot)
+                        inventory.getItem(slot)
                     );
                 }
             }
         }
-        super.onReplaced(oldState, worldIn, pos, newState, isMoving);
+        super.onRemove(oldState, worldIn, pos, newState, isMoving);
     }
 
     @Override
-    public boolean hasTileEntity(BlockState state) {
-        return true;
-    }
-
-    @Override
-    public TileEntity createTileEntity(@Nonnull BlockState state, @Nonnull IBlockReader world) {
-        return new NBTExtractorTileEntity();
-    }
-
-    @Override
-    public BlockState getStateForPlacement(BlockItemUseContext context) {
-        return this.getDefaultState()
-            .with(HORIZONTAL_FACING, context.getPlacementHorizontalFacing().getOpposite());
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        return this.defaultBlockState()
+            .setValue(FACING, context.getHorizontalDirection().getOpposite());
     }
 
     @Override
     @Nonnull
     @SuppressWarnings("deprecation")
-    public ActionResultType onBlockActivated(
+    public InteractionResult use(
         BlockState blockState,
-        World world,
+        Level world,
         BlockPos blockPos,
-        PlayerEntity player,
-        Hand hand,
-        BlockRayTraceResult rayTraceResult
+        Player player,
+        InteractionHand hand,
+        BlockHitResult rayTraceResult
     ) {
-        ItemStack heldItem = player.getHeldItem(hand);
-        if (!world.isRemote) {
-            ServerPlayerEntity playerMP = (ServerPlayerEntity) player;
-            if (WrenchHelpers.isWrench(player, heldItem, world, blockPos, rayTraceResult.getFace())
+        ItemStack heldItem = player.getItemInHand(hand);
+        if (!world.isClientSide) {
+            ServerPlayer playerMP = (ServerPlayer) player;
+            if (WrenchHelpers.isWrench(player, heldItem, world, blockPos, rayTraceResult.getDirection())
                 && player.isCrouching()
             ) {
-                Block.spawnDrops(
+                Block.dropResources(
                     blockState,
                     world,
                     blockPos,
-                    blockState.hasTileEntity() ? world.getTileEntity(blockPos) : null,
+                    world.getBlockEntity(blockPos),
                     player,
                     heldItem
                 );
                 world.destroyBlock(blockPos, false);
-                return ActionResultType.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
             if (heldItem.getItem() == Additions.NBT_EXTRACTOR_REMOTE.get()) {
-                return ActionResultType.PASS;
+                return InteractionResult.PASS;
             }
             if (!player.isCrouching()) {
                 this.playerAccess(world, blockPos, playerMP);
-                return ActionResultType.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
         }
-        return ActionResultType.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
-    public void playerAccess(World world, BlockPos pos, ServerPlayerEntity playerMP) {
-        TileEntity tileentity = world.getTileEntity(pos);
-        if (tileentity instanceof NBTExtractorTileEntity) {
-            NBTExtractorTileEntity nbtExtractorTileEntity = (NBTExtractorTileEntity) tileentity;
+    public void playerAccess(Level world, BlockPos pos, ServerPlayer playerMP) {
+        BlockEntity tileentity = world.getBlockEntity(pos);
+        if (tileentity instanceof NBTExtractorBE) {
+            NBTExtractorBE nbtExtractorTileEntity = (NBTExtractorBE) tileentity;
             nbtExtractorTileEntity.refreshVariables(true);
             NetworkHooks.openGui(playerMP, nbtExtractorTileEntity, pos);
         }
@@ -158,13 +163,21 @@ public class NBTExtractor extends CabledHorizontalBlock {
     @Nonnull
     @SuppressWarnings("deprecation")
     public BlockState rotate(BlockState state, Rotation rot) {
-        return state.with(HORIZONTAL_FACING, rot.rotate(state.get(HORIZONTAL_FACING)));
+        return state.setValue(FACING, rot.rotate(state.getValue(FACING)));
     }
 
     @Override
     @Nonnull
     @SuppressWarnings("deprecation")
     public BlockState mirror(BlockState state, Mirror mirrorIn) {
-        return state.rotate(mirrorIn.toRotation(state.get(HORIZONTAL_FACING)));
+        return state.rotate(mirrorIn.getRotation(state.getValue(FACING)));
+    }
+
+    @org.jetbrains.annotations.Nullable
+    @Override
+    public BlockEntity newBlockEntity(
+        BlockPos blockPos, BlockState blockState
+    ) {
+        return new NBTExtractorBE(blockPos, blockState);
     }
 }

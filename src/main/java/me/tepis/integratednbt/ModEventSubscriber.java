@@ -12,7 +12,7 @@ public final class ModEventSubscriber {
     @SubscribeEvent
     @SuppressWarnings("deprecation")
     public static void onSetup(FMLCommonSetupEvent event) {
-        DeferredWorkQueue.runLater(() -> {
+        event.enqueueWork(() -> {
             VariableFacadeHandlerRegistry.getInstance()
                 .registerHandler(new NBTExtractedVariableFacadeHandler());
             OperatorRegistry.getInstance()

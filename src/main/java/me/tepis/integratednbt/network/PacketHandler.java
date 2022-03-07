@@ -6,9 +6,9 @@ import me.tepis.integratednbt.network.serverbound.NBTExtractorRemoteRequestMessa
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateAutoRefreshMessage.NBTExtractorUpdateAutoRefreshMessageHandler;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateExtractionPathMessage.NBTExtractorUpdateExtractionPathMessageHandler;
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateOutputModeMessage.NBTExtractorUpdateOutputModeMessageHandler;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.network.NetworkRegistry;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.simple.SimpleChannel;
 
 public abstract class PacketHandler {
     private static final String PROTOCOL_VERSION = "1";

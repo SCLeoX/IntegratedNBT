@@ -1,9 +1,9 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.TextComponent;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.operator.IOperator;
 import org.cyclops.integrateddynamics.api.evaluate.operator.IOperatorSerializer;
@@ -20,22 +20,22 @@ public class NBTExtractionOperatorSerializer implements IOperatorSerializer<NBTE
     }
 
     @Override
-    public INBT serialize(NBTExtractionOperator operator) {
-        CompoundNBT data = new CompoundNBT();
+    public Tag serialize(NBTExtractionOperator operator) {
+        CompoundTag data = new CompoundTag();
         data.put("path", operator.getExtractionPath().toNBT());
         data.putByte("defaultNBTId", operator.getDefaultNBTId());
         return data;
     }
 
     @Override
-    public NBTExtractionOperator deserialize(INBT nbt) throws EvaluationException {
+    public NBTExtractionOperator deserialize(Tag nbt) throws EvaluationException {
         try {
-            CompoundNBT tag = (CompoundNBT) nbt;
+            CompoundTag tag = (CompoundTag) nbt;
             return new NBTExtractionOperator(NBTPath.fromNBT(tag.get("path"))
                 .orElse(new NBTPath()), tag.getByte("defaultNBTId"));
         } catch (Exception e) {
             e.printStackTrace();
-            throw new EvaluationException(new StringTextComponent(e.getMessage()));
+            throw new EvaluationException(new TextComponent(e.getMessage()));
         }
     }
 }

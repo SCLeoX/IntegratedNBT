@@ -1,6 +1,6 @@
 package me.tepis.integratednbt;
 
-import net.minecraft.nbt.INBT;
+import net.minecraft.nbt.Tag;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.expression.VariableAdapter;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
@@ -11,7 +11,7 @@ import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeNbt.ValueN
 public class NBTExtractedVariable extends VariableAdapter<IValue> {
     private IVariable<ValueNbt> sourceNBTVariable;
     private NBTPath extractionPath;
-    private INBT cachedValue;
+    private Tag cachedValue;
     private byte defaultNBTId;
 
     public NBTExtractedVariable(

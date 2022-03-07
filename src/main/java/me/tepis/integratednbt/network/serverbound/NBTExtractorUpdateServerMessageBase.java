@@ -1,16 +1,14 @@
 package me.tepis.integratednbt.network.serverbound;
 
-import me.tepis.integratednbt.NBTExtractorTileEntity;
+import me.tepis.integratednbt.NBTExtractorBE;
 import me.tepis.integratednbt.network.Message;
 import me.tepis.integratednbt.network.MessageHandler;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraftforge.fml.network.NetworkEvent.Context;
-
-import java.util.function.Supplier;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraftforge.network.NetworkEvent.Context;
 
 /**
  * From client to server;
@@ -25,21 +23,21 @@ public abstract class NBTExtractorUpdateServerMessageBase implements Message {
         @SuppressWarnings("deprecation")
         public final void onMessage(T message, Context ctx) {
             ctx.enqueueWork(() -> {
-                ServerPlayerEntity player = ctx.getSender();
+                ServerPlayer player = ctx.getSender();
                 assert player != null;
-                World world = player.world;
-                if (!world.isBlockLoaded(message.blockPos)) {
+                Level world = player.level;
+                if (!world.hasChunkAt(message.blockPos)) {
                     return;
                 }
-                TileEntity tileEntity = world.getTileEntity(message.blockPos);
+                BlockEntity tileEntity = world.getBlockEntity(message.blockPos);
                 if (tileEntity == null) {
                     return;
                 }
-                if (!(tileEntity instanceof NBTExtractorTileEntity)) {
+                if (!(tileEntity instanceof NBTExtractorBE)) {
                     return;
                 }
-                NBTExtractorTileEntity nbtExtractorTileEntity = (NBTExtractorTileEntity) tileEntity;
-                if (!nbtExtractorTileEntity.isUsableByPlayer(player)) {
+                NBTExtractorBE nbtExtractorTileEntity = (NBTExtractorBE) tileEntity;
+                if (!nbtExtractorTileEntity.stillValid(player)) {
                     return;
                 }
                 this.updateTileEntity(message, nbtExtractorTileEntity);
@@ -48,7 +46,7 @@ public abstract class NBTExtractorUpdateServerMessageBase implements Message {
 
         public abstract void updateTileEntity(
             T message,
-            NBTExtractorTileEntity nbtExtractorTileEntity
+            NBTExtractorBE nbtExtractorTileEntity
         );
     }
 
@@ -61,12 +59,12 @@ public abstract class NBTExtractorUpdateServerMessageBase implements Message {
     public NBTExtractorUpdateServerMessageBase() {}
 
     @Override
-    public void fromBytes(PacketBuffer buf) {
-        this.blockPos = BlockPos.fromLong(buf.readLong());
+    public void fromBytes(FriendlyByteBuf buf) {
+        this.blockPos = BlockPos.of(buf.readLong());
     }
 
     @Override
-    public void toBytes(PacketBuffer buf) {
-        buf.writeLong(this.blockPos.toLong());
+    public void toBytes(FriendlyByteBuf buf) {
+        buf.writeLong(this.blockPos.asLong());
     }
 }

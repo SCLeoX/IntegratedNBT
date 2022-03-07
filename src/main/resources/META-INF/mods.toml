@@ -4,7 +4,7 @@ license="MIT"
 
 [[mods]]
 modId="integratednbt"
-version="${version}"
+version="1.5.0"
 displayName="Integrated NBT"
 authors="Rin Tepis"
 description='''
@@ -25,6 +25,6 @@ Integrated NBT is an addon for Integrated Dynamics. It offers a simpler way of e
 [[dependencies.integratednbt]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.16.4]"
+    versionRange="[1.18.1]"
     ordering="NONE"
     side="BOTH"
