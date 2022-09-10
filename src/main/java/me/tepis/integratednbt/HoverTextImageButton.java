@@ -6,7 +6,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,7 +38,7 @@ public class HoverTextImageButton extends ImageButton {
 
     public void setHoverTextRaw(List<String> hoverText) {
         this.hoverText = hoverText.stream()
-            .map(TextComponent::new)
+            .map(s -> Component.literal(s))
             .collect(Collectors.toList());
     }
 

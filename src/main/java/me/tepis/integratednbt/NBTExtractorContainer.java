@@ -14,7 +14,6 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.network.PacketDistributor;
 import org.cyclops.integrateddynamics.api.PartStateException;
@@ -177,7 +176,7 @@ public class NBTExtractorContainer extends AbstractContainerMenu {
                 } catch (EvaluationException | PartStateException exception) {
                     exception.printStackTrace();
                     errorCode = ErrorCode.EVAL_ERROR;
-                    errorMessage = new TextComponent(exception.getMessage());
+                    errorMessage = Component.literal(exception.getMessage());
                 } catch (Exception exception) {
                     errorCode = ErrorCode.UNEXPECTED_ERROR;
                     IntegratedNBT.LOGGER.error(

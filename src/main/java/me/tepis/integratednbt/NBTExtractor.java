@@ -26,7 +26,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkHooks;
@@ -53,7 +52,7 @@ public class NBTExtractor extends CabledHorizontalBlock implements EntityBlock {
             @Nonnull TooltipFlag flag
         ) {
             super.appendHoverText(itemStack, world, tooltip, flag);
-            tooltip.add(new TranslatableComponent("integratednbt:nbt_extractor.tooltip"));
+            tooltip.add(Component.translatable("integratednbt:nbt_extractor.tooltip"));
         }
     }
 
@@ -155,7 +154,7 @@ public class NBTExtractor extends CabledHorizontalBlock implements EntityBlock {
         if (tileentity instanceof NBTExtractorBE) {
             NBTExtractorBE nbtExtractorTileEntity = (NBTExtractorBE) tileentity;
             nbtExtractorTileEntity.refreshVariables(true);
-            NetworkHooks.openGui(playerMP, nbtExtractorTileEntity, pos);
+            NetworkHooks.openScreen(playerMP, nbtExtractorTileEntity, pos);
         }
     }
 

@@ -2,6 +2,7 @@ package me.tepis.integratednbt;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.resources.ResourceLocation;
 
 public abstract class Integration {
@@ -16,7 +17,7 @@ public abstract class Integration {
         if (item == null) {
             return false;
         }
-        ResourceLocation resourceLocation = item.getRegistryName();
+        ResourceLocation resourceLocation = ForgeRegistries.ITEMS.getKey(item);
         if (resourceLocation == null) {
             return false;
         }

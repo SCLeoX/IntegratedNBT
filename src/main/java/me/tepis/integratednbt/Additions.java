@@ -41,7 +41,7 @@ public abstract class Additions {
     );
 
     public static final DeferredRegister<MenuType<?>> CONTAINER_TYPES = DeferredRegister.create(
-        ForgeRegistries.CONTAINERS,
+        ForgeRegistries.MENU_TYPES,
         IntegratedNBT.MODID
     );
 
@@ -52,7 +52,7 @@ public abstract class Additions {
         );
 
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(
-        ForgeRegistries.BLOCK_ENTITIES,
+        ForgeRegistries.BLOCK_ENTITY_TYPES,
         IntegratedNBT.MODID
     );
 
