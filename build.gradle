@@ -109,6 +109,11 @@ repositories {
     flatDir {
         dir 'libs'
     }
+
+    mavenCentral()
+	mavenLocal()
+
+    maven { url = "https://www.cursemaven.com" } // curse mods
 }
 
 dependencies {
@@ -117,9 +122,13 @@ dependencies {
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
     minecraft 'net.minecraftforge:forge:1.18.2-40.1.16'
 
-    implementation fg.deobf('org.cyclops.integrateddynamics:IntegratedDynamics:1.18.2-1.11.0:deobf')
-    implementation fg.deobf('org.cyclops.commoncapabilities:CommonCapabilities:1.18.2-2.8.2:deobf')
-    implementation fg.deobf('org.cyclops.cyclopscore:CyclopsCore:1.18.2-1.14.0:deobf')
+    //Integrated dynamics
+    implementation fg.deobf("curse.maven:cyclops-core-232758:3900719");
+    implementation fg.deobf("curse.maven:common-capabilities-247007:3768491");
+    implementation fg.deobf("curse.maven:integrated-dynamics-236307:3928077");
+    implementation fg.deobf("curse.maven:integrated-tunnels-251389:3900670");
+    implementation fg.deobf("curse.maven:integrated-crafting-287357:3804733");
+    implementation fg.deobf("curse.maven:integrated-terminals-295910:3824478");
 
     modLib "com.google.re2j:re2j:1.1"
 
