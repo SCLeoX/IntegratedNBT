@@ -14,7 +14,7 @@ apply plugin: 'maven-publish'
 apply from: 'https://raw.githubusercontent.com/SizableShrimp/Forge-Class-Remapper/main/classremapper.gradle'
 
 
-version = "1.5.2"
+version = "1.6.0"
 group = "me.tepis.integratednbt" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "integratednbt"
 

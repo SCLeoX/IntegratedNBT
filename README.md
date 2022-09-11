@@ -16,3 +16,8 @@ GUI is responsive and usable across all GUI scales and screen resolutions:
 ![](./screenshots/4.png)
 
 See [GitHub Wiki](https://github.com/SCLeoX/IntegratedNBT/wiki) for a brief tutorial on how to use this mod.
+
+## Special Thanks
+@Anoyomouse For porting to 1.18.2
+
+@tdaffin For porting to 1.19.2
