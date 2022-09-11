@@ -19,7 +19,6 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.common.capabilities.Capability;
@@ -589,7 +588,7 @@ public class NBTExtractorBE extends BlockEntity implements ICapabilityProvider,
     @Nonnull
     @Override
     public Component getDisplayName() {
-        return new TranslatableComponent("tile.integratednbt:nbt_extractor.name");
+        return Component.translatable("tile.integratednbt:nbt_extractor.name");
     }
 
     @Override

@@ -14,8 +14,8 @@ import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.LongTag;
 import net.minecraft.nbt.TagTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.ShortTag;
-import net.minecraft.network.chat.TextComponent;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValueType;
 
@@ -301,7 +301,7 @@ public abstract class NBTTreeViewer {
                 }
                 this.gui.renderTooltip(
                     matrixStack,
-                    FontHelper.wrap(list.stream().map(TextComponent::new).collect(Collectors.toList()), 250),
+                    FontHelper.wrap(list.stream().map(s -> Component.literal(s)).collect(Collectors.toList()), 250),
                     this.mouseX,
                     (int) (this.mouseY - this.renderScroll)
                 );

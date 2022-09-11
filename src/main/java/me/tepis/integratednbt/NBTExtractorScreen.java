@@ -14,10 +14,8 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.PacketDistributor;
@@ -188,29 +186,29 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
                 BUTTON_UNKNOWN,
                 BUTTON_UNKNOWN_HOVER
             );
-            messages.add(new TranslatableComponent(
+            messages.add(Component.translatable(
                 "integratednbt:nbt_extractor.output_mode",
-                new TranslatableComponent("integratednbt:nbt_extractor.loading")
+                Component.translatable("integratednbt:nbt_extractor.loading")
             ));
         } else {
             this.outputModeButton.setTexture(
                 outputMode.getButtonTextureNormal(),
                 outputMode.getButtonTextureHover()
             );
-            messages.add(new TranslatableComponent(
+            messages.add(Component.translatable(
                 "integratednbt:nbt_extractor.output_mode",
                 outputMode.getName()
             ));
         }
-        messages.add(new TranslatableComponent(
+        messages.add(Component.translatable(
             "integratednbt:nbt_extractor.output_mode.description.begin").setStyle(Style.EMPTY.withColor(
             ChatFormatting.GRAY)));
-        messages.add(new TextComponent(" "));
+        messages.add(Component.literal(" "));
         Arrays.stream(NBTExtractorOutputMode.values())
             .forEach(describingOutputMode -> messages.add(describingOutputMode.getDescription(
                 describingOutputMode.equals(outputMode))));
-        messages.add(new TextComponent(" "));
-        messages.add(new TranslatableComponent(
+        messages.add(Component.literal(" "));
+        messages.add(Component.translatable(
             "integratednbt:nbt_extractor.output_mode.description.end",
             NBTExtractorOutputMode.REFERENCE.getName()
         ).setStyle(Style.EMPTY.withColor(
@@ -559,7 +557,7 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
             if (descriptionWidth > wrappingWidth) {
                 // this.fontRenderer.drawSplitString(
                 this.fontRenderer.drawWordWrap(
-                    new TextComponent(description),
+                    Component.literal(description),
                     -wrappingWidth / 2,
                     4,
                     wrappingWidth,

@@ -2,11 +2,12 @@ package me.tepis.integratednbt;
 
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.model.data.IModelData;
+import net.minecraftforge.client.model.data.ModelData;
+
 import org.cyclops.cyclopscore.datastructure.Wrapper;
 import org.cyclops.integrateddynamics.api.client.model.IVariableModelBaked;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
@@ -21,7 +22,6 @@ import org.cyclops.integrateddynamics.core.item.VariableFacadeBase;
 
 import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Random;
 
 public class NBTExtractedVariableFacade extends VariableFacadeBase {
     private int sourceNBTId;
@@ -74,15 +74,15 @@ public class NBTExtractedVariableFacade extends VariableFacadeBase {
         if (!this.isValid()) {
             return;
         }
-        list.add(new TranslatableComponent(
+        list.add(Component.translatable(
             "integratednbt:nbt_extracted_variable.tooltip.source_nbt_id",
             this.sourceNBTId
         ));
-        list.add(new TranslatableComponent(
+        list.add(Component.translatable(
             "integratednbt:nbt_extracted_variable.tooltip.path",
             this.extractionPath.getDisplayText()
         ));
-        list.add(new TranslatableComponent(
+        list.add(Component.translatable(
             "integratednbt:nbt_extracted_variable.tooltip.default_value",
             NBTValueConverter.getDefaultValueDisplayText(this.defaultNBTId)
         ));
@@ -98,8 +98,8 @@ public class NBTExtractedVariableFacade extends VariableFacadeBase {
     public void addModelOverlay(
         IVariableModelBaked variableModelBaked,
         List<BakedQuad> quads,
-        Random random,
-        IModelData modelData
+        RandomSource random,
+        ModelData modelData
     ) {
 
     }
@@ -148,23 +148,23 @@ public class NBTExtractedVariableFacade extends VariableFacadeBase {
             return;
         }
         if (this.sourceNBTId < 0) {
-            validator.addError(new TranslatableComponent(L10NValues.VARIABLE_ERROR_INVALIDITEM));
+            validator.addError(Component.translatable(L10NValues.VARIABLE_ERROR_INVALIDITEM));
         } else if (!network.hasVariableFacade(this.sourceNBTId)) {
-            validator.addError(new TranslatableComponent(
+            validator.addError(Component.translatable(
                 L10NValues.OPERATOR_ERROR_VARIABLENOTINNETWORK,
                 Integer.toString(this.sourceNBTId)
             ));
         } else {
             IVariableFacade sourceVariableFacade = network.getVariableFacade(this.sourceNBTId);
             if (sourceVariableFacade == this) {
-                validator.addError(new TranslatableComponent(
+                validator.addError(Component.translatable(
                     L10NValues.OPERATOR_ERROR_CYCLICREFERENCE,
                     Integer.toString(this.sourceNBTId)
                 ));
             } else if (sourceVariableFacade != null) {
                 final Wrapper<Boolean> isValid = new Wrapper<>(true);
                 if (this.validating) {
-                    validator.addError(new TranslatableComponent(
+                    validator.addError(Component.translatable(
                         L10NValues.OPERATOR_ERROR_CYCLICREFERENCE,
                         this.getId()
                     ));

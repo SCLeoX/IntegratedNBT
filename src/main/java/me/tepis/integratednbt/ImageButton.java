@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.opengl.GL11;
@@ -24,7 +24,7 @@ public class ImageButton extends Button {
         int y,
         Button.OnPress onPress
     ) {
-        super(x, y, textureNormal.getWidth(), textureNormal.getHeight(), new TextComponent(""), onPress);
+        super(x, y, textureNormal.getWidth(), textureNormal.getHeight(), Component.literal(""), onPress);
         this.textureNormal = textureNormal;
         this.textureHover = textureHover;
     }
@@ -33,7 +33,7 @@ public class ImageButton extends Button {
      * For lazy initialization of textures.
      */
     public ImageButton(int x, int y, Button.OnPress onPress) {
-        super(x, y, 1, 1, new TextComponent(""), onPress);
+        super(x, y, 1, 1, Component.literal(""), onPress);
     }
 
     public void setTexture(TexturePart textureNormal, TexturePart textureHover) {

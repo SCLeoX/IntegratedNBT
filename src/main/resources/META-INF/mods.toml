@@ -13,18 +13,18 @@ Integrated NBT is an addon for Integrated Dynamics. It offers a simpler way of e
 [[dependencies.integratednbt]]
     modId="integrateddynamics"
     mandatory=true
-    versionRange="[1.10.13,)"
+    versionRange="[1.11.9,)"
     ordering="AFTER"
     side="BOTH"
 [[dependencies.integratednbt]]
     modId="forge"
     mandatory=true
-    versionRange="[40.1,)"
+    versionRange="[43.1,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.integratednbt]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.18.2]"
+    versionRange="[1.19.2]"
     ordering="NONE"
     side="BOTH"

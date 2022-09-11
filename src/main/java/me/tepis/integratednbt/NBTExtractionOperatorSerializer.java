@@ -2,8 +2,8 @@ package me.tepis.integratednbt;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.network.chat.TextComponent;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.operator.IOperator;
 import org.cyclops.integrateddynamics.api.evaluate.operator.IOperatorSerializer;
@@ -35,7 +35,7 @@ public class NBTExtractionOperatorSerializer implements IOperatorSerializer<NBTE
                 .orElse(new NBTPath()), tag.getByte("defaultNBTId"));
         } catch (Exception e) {
             e.printStackTrace();
-            throw new EvaluationException(new TextComponent(e.getMessage()));
+            throw new EvaluationException(Component.literal(e.getMessage()));
         }
     }
 }

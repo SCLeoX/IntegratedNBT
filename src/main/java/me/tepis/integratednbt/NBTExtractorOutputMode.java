@@ -7,7 +7,6 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.TranslatableComponent;
 import org.cyclops.integrateddynamics.IntegratedDynamics;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.item.IValueTypeVariableFacade;
@@ -221,7 +220,7 @@ public enum NBTExtractorOutputMode {
     );
 
     public Component getDescription(boolean highlighted) {
-        return new TranslatableComponent(
+        return Component.translatable(
             "integratednbt:nbt_extractor.output_mode." + this.translationId + ".description",
             this.getName()
         ).setStyle(highlighted
@@ -230,7 +229,7 @@ public enum NBTExtractorOutputMode {
     }
 
     public Component getName() {
-        return new TranslatableComponent(
+        return Component.translatable(
             "integratednbt:nbt_extractor.output_mode." + this.translationId + ".name"
         ).setStyle(Style.EMPTY.withColor(this.color));
     }

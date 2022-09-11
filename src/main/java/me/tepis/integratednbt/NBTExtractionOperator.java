@@ -5,7 +5,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TranslatableComponent;
 import org.cyclops.cyclopscore.helper.L10NHelpers;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.operator.IOperator;
@@ -48,7 +47,7 @@ public class NBTExtractionOperator implements IOperator {
 
     @Override
     public MutableComponent getLocalizedNameFull() {
-        return new TranslatableComponent("integratednbt:nbt_extraction_operator.full_name");
+        return Component.translatable("integratednbt:nbt_extraction_operator.full_name");
     }
 
     @Override
@@ -57,23 +56,23 @@ public class NBTExtractionOperator implements IOperator {
         String categoryName = L10NHelpers.localize(this.getUnlocalizedCategoryName());
         String symbol = this.getSymbol();
         String outputTypeName = L10NHelpers.localize(this.getOutputType().getTranslationKey());
-        lines.add(new TranslatableComponent(
+        lines.add(Component.translatable(
             L10NValues.OPERATOR_TOOLTIP_OPERATORNAME,
             operatorName,
             symbol
         ));
-        lines.add(new TranslatableComponent(
+        lines.add(Component.translatable(
             L10NValues.OPERATOR_TOOLTIP_OPERATORCATEGORY,
             categoryName
         ));
-        lines.add(new TranslatableComponent(
+        lines.add(Component.translatable(
             L10NValues.OPERATOR_TOOLTIP_INPUTTYPENAME,
             1,
-            new TranslatableComponent(ValueTypes.NBT.getTranslationKey()).setStyle(
+            Component.translatable(ValueTypes.NBT.getTranslationKey()).setStyle(
                 Style.EMPTY.withColor(
                     ValueTypes.NBT.getDisplayColorFormat()))
         ));
-        lines.add(new TranslatableComponent(
+        lines.add(Component.translatable(
             L10NValues.OPERATOR_TOOLTIP_OUTPUTTYPENAME,
             this.getOutputType().getDisplayColorFormat() + outputTypeName
         ));
@@ -145,28 +144,28 @@ public class NBTExtractionOperator implements IOperator {
     @Override
     public MutableComponent validateTypes(IValueType[] input) {
         if (input.length != 1) {
-            return new TranslatableComponent(
+            return Component.translatable(
                 L10NValues.OPERATOR_ERROR_WRONGINPUTLENGTH,
-                new TranslatableComponent("integratednbt:nbt_extraction_operator.full_name"),
+                Component.translatable("integratednbt:nbt_extraction_operator.full_name"),
                 input.length,
                 1
             );
         }
         IValueType<?> inputType = input[0];
         if (inputType == null) {
-            return new TranslatableComponent(
+            return Component.translatable(
                 L10NValues.OPERATOR_ERROR_NULLTYPE,
-                new TranslatableComponent("integratednbt:nbt_extraction_operator.full_name"),
+                Component.translatable("integratednbt:nbt_extraction_operator.full_name"),
                 "0"
             );
         }
         if (!ValueHelpers.correspondsTo(ValueTypes.NBT, inputType)) {
-            return new TranslatableComponent(
+            return Component.translatable(
                 L10NValues.OPERATOR_ERROR_WRONGTYPE,
-                new TranslatableComponent("integratednbt:nbt_extraction_operator.full_name"),
-                new TranslatableComponent(inputType.getTranslationKey()),
+                Component.translatable("integratednbt:nbt_extraction_operator.full_name"),
+                Component.translatable(inputType.getTranslationKey()),
                 "1",
-                new TranslatableComponent(ValueTypes.NBT.getTranslationKey())
+                Component.translatable(ValueTypes.NBT.getTranslationKey())
             );
         }
         return null;
