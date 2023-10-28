@@ -128,7 +128,7 @@ public class NBTExtractorContainer extends AbstractContainerMenu {
     ) {
         Objects.requireNonNull(playerInventory);
         Objects.requireNonNull(data);
-        BlockEntity tileAtPos = playerInventory.player.level.getBlockEntity(data.readBlockPos());
+        BlockEntity tileAtPos = playerInventory.player.level().getBlockEntity(data.readBlockPos());
         if (tileAtPos instanceof NBTExtractorBE) {
             return (NBTExtractorBE) tileAtPos;
         }

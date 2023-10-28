@@ -16,6 +16,7 @@ public class IntegratedNBT {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         Additions.BLOCKS.register(modEventBus);
         Additions.ITEMS.register(modEventBus);
+        Additions.CREATIVE_MODE_TABS.register(modEventBus);
         Additions.CONTAINER_TYPES.register(modEventBus);
         Additions.BLOCK_ENTITIES.register(modEventBus);
         PacketHandler.register();

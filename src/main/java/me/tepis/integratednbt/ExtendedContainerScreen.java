@@ -1,10 +1,8 @@
 package me.tepis.integratednbt;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat.Mode;
-import com.mojang.math.Matrix4f;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.Tesselator;
@@ -14,6 +12,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
+import org.joml.Matrix4f;
 
 public abstract class ExtendedContainerScreen<T extends AbstractContainerMenu> extends AbstractContainerScreen<T> {
     public ExtendedContainerScreen(
@@ -49,9 +48,9 @@ public abstract class ExtendedContainerScreen<T extends AbstractContainerMenu> e
         tesselator.end();
     }
 
-    public void drawSplitString(PoseStack matrixStack, Font fontRenderer, FormattedText text, int x, int y, int maxLength, int color) {
+    public void drawSplitString(GuiGraphics guiGraphics, Font fontRenderer, FormattedText text, int x, int y, int maxLength, int color) {
         for(FormattedCharSequence ireorderingprocessor : fontRenderer.split(text, maxLength)) {
-            fontRenderer.drawShadow(matrixStack, ireorderingprocessor, (float) x, (float) y, color);
+            guiGraphics.drawString(font, ireorderingprocessor, x, y, color);
             y += 9;
         }
 

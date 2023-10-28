@@ -7,6 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.operator.IOperator;
 import org.cyclops.integrateddynamics.api.evaluate.operator.IOperatorSerializer;
+import org.cyclops.integrateddynamics.api.evaluate.variable.ValueDeseralizationContext;
 
 public class NBTExtractionOperatorSerializer implements IOperatorSerializer<NBTExtractionOperator> {
     @Override
@@ -28,7 +29,7 @@ public class NBTExtractionOperatorSerializer implements IOperatorSerializer<NBTE
     }
 
     @Override
-    public NBTExtractionOperator deserialize(Tag nbt) throws EvaluationException {
+    public NBTExtractionOperator deserialize(ValueDeseralizationContext valueDeseralizationContext, Tag nbt) throws EvaluationException {
         try {
             CompoundTag tag = (CompoundTag) nbt;
             return new NBTExtractionOperator(NBTPath.fromNBT(tag.get("path"))

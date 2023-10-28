@@ -12,8 +12,6 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraftforge.network.NetworkEvent.Context;
 
-import java.util.function.Supplier;
-
 /**
  * From server to client;
  * Updates NBT tree, error code, and/or extraction path for the client
