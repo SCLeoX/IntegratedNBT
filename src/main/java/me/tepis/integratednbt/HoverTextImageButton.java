@@ -1,8 +1,6 @@
 package me.tepis.integratednbt;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
@@ -45,10 +43,10 @@ public class HoverTextImageButton extends ImageButton {
     /**
      * Draw hover text if is hovered
      */
-    public void drawHover(PoseStack matrixStack, int mouseX, int mouseY) {
+    public void drawHover(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (this.isHovered) {
-            this.gui.renderTooltip(
-                matrixStack,
+            guiGraphics.renderTooltip(
+                this.gui.getMinecraft().font,
                 FontHelper.wrap(this.hoverText, 200),
                 mouseX,
                 mouseY

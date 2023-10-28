@@ -1,7 +1,6 @@
 package me.tepis.integratednbt;
 
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.DeferredWorkQueue;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.cyclops.integrateddynamics.core.evaluate.operator.OperatorRegistry;

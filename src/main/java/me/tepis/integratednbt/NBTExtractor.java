@@ -2,7 +2,6 @@ package me.tepis.integratednbt;
 
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
-import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -23,10 +22,8 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.material.Material;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkHooks;
 import org.cyclops.integrateddynamics.core.helper.WrenchHelpers;
@@ -41,7 +38,7 @@ import static me.tepis.integratednbt.Additions.NBT_EXTRACTOR_BLOCK;
 public class NBTExtractor extends CabledHorizontalBlock implements EntityBlock {
     public static class NBTExtractorBlockItem extends BlockItem {
         public NBTExtractorBlockItem() {
-            super(NBT_EXTRACTOR_BLOCK.get(), new Item.Properties().tab(ItemGroups.ITEM_GROUP));
+            super(NBT_EXTRACTOR_BLOCK.get(), new Item.Properties());
         }
 
         @Override

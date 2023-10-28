@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "integratednbt:items/nbt_extractor_remote"
+    "layer0": "integratednbt:item/nbt_extractor_remote"
   }
 }

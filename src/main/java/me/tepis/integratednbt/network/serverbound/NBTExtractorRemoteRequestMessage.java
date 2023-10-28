@@ -9,8 +9,6 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.InteractionHand;
 import net.minecraftforge.network.NetworkEvent.Context;
 
-import java.util.function.Supplier;
-
 /**
  * From client to server;
  * Requests to open the GUI for a NBT Extractor at location

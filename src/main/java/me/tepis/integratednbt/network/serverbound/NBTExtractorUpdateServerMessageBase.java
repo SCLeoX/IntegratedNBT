@@ -25,7 +25,7 @@ public abstract class NBTExtractorUpdateServerMessageBase implements Message {
             ctx.enqueueWork(() -> {
                 ServerPlayer player = ctx.getSender();
                 assert player != null;
-                Level world = player.level;
+                Level world = player.level();
                 if (!world.hasChunkAt(message.blockPos)) {
                     return;
                 }

@@ -31,6 +31,7 @@ import org.cyclops.cyclopscore.persist.nbt.NBTClassType;
 import org.cyclops.integrateddynamics.api.block.cable.ICable;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IVariable;
+import org.cyclops.integrateddynamics.api.evaluate.variable.ValueDeseralizationContext;
 import org.cyclops.integrateddynamics.api.network.IEventListenableNetworkElement;
 import org.cyclops.integrateddynamics.api.network.INetwork;
 import org.cyclops.integrateddynamics.api.network.INetworkElement;
@@ -246,11 +247,7 @@ public class NBTExtractorBE extends BlockEntity implements ICapabilityProvider,
             }
         };
     private NonNullList<ItemStack> itemStacks = NonNullList.withSize(2, ItemStack.EMPTY);
-    private InventoryVariableEvaluator<IValue> evaluator = new InventoryVariableEvaluator<>(
-        this,
-        SRC_NBT_SLOT,
-        ValueTypes.CATEGORY_ANY
-    );
+    private InventoryVariableEvaluator<IValue> evaluator;
     /**
      * A set of expanded paths in this extractor;
      * <p>
@@ -287,6 +284,17 @@ public class NBTExtractorBE extends BlockEntity implements ICapabilityProvider,
         super(Additions.NBT_EXTRACTOR_BE.get(), pos, state);
         this.expandedPaths = new HashSet<>();
         this.expandedPaths.add(new NBTPath());
+
+        this.evaluator = createEvaluator();
+    }
+
+    protected InventoryVariableEvaluator<IValue> createEvaluator() {
+       return new InventoryVariableEvaluator<>(
+                this,
+                SRC_NBT_SLOT,
+                ValueDeseralizationContext.of(getLevel()),
+                ValueTypes.CATEGORY_ANY
+        );
     }
 
     public NBTExtractorOutputMode getOutputMode() {
@@ -325,7 +333,8 @@ public class NBTExtractorBE extends BlockEntity implements ICapabilityProvider,
         this.variableContainerCapability.refreshVariables(
             this.networkCarrierCapability.getNetwork(),
             this,
-            sendVariablesUpdateEvent
+            sendVariablesUpdateEvent,
+            ValueDeseralizationContext.of(getLevel())
         );
     }
 
@@ -588,7 +597,7 @@ public class NBTExtractorBE extends BlockEntity implements ICapabilityProvider,
     @Nonnull
     @Override
     public Component getDisplayName() {
-        return Component.translatable("tile.integratednbt:nbt_extractor.name");
+        return Component.translatable("block.integratednbt.nbt_extractor");
     }
 
     @Override
@@ -665,6 +674,7 @@ public class NBTExtractorBE extends BlockEntity implements ICapabilityProvider,
                     : this.lastEvaluatedNBT,
                 this.extractionPath,
                 this.defaultNBTId,
+                this.getLevel(),
                 this.getBlockState()
             );
             if (result != null) {

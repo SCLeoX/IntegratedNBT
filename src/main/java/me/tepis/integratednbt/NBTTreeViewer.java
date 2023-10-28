@@ -1,9 +1,9 @@
 package me.tepis.integratednbt;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.nbt.ByteTag;
 import net.minecraft.nbt.CompoundTag;
@@ -140,7 +140,7 @@ public abstract class NBTTreeViewer {
     }
 
     private boolean renderKVPair(
-        PoseStack matrixStack,
+        GuiGraphics guiGraphics,
         String label,
         String value,
         int valueColor
@@ -168,7 +168,7 @@ public abstract class NBTTreeViewer {
                 }
                 PURE_COLOR.renderToScaled(
                     this.gui,
-                    matrixStack,
+                    guiGraphics.pose(),
                     this.currentX - 1,
                     this.currentY - 1,
                     rightBoundary - this.currentX + 1,
@@ -178,21 +178,22 @@ public abstract class NBTTreeViewer {
             }
         }
         if (value.isEmpty()) {
-            this.fontRenderer.draw(matrixStack, label, this.currentX, this.currentY, LABEL_COLOR);
+            guiGraphics.drawString(this.fontRenderer, label, this.currentX, this.currentY, LABEL_COLOR, false);
         } else {
-            int valueX = this.fontRenderer.draw(
-                matrixStack,
+            int valueX = guiGraphics.drawString(
+                this.fontRenderer,
                 label + ": ",
                 this.currentX,
                 this.currentY,
-                LABEL_COLOR
+                LABEL_COLOR,
+                false
             );
-            this.fontRenderer.draw(matrixStack, value, valueX, this.currentY, valueColor);
+            guiGraphics.drawString(this.fontRenderer, value, valueX, this.currentY, valueColor);
         }
         return isHovering;
     }
 
-    private void renderExpandableButton(PoseStack matrixStack, boolean expanded) {
+    private void renderExpandableButton(GuiGraphics guiGraphics, boolean expanded) {
         boolean hovering = (
             this.mouseX >= this.currentX &&
                 this.mouseX < (this.currentX + EXPAND_BUTTON_SIZE) &&
@@ -205,11 +206,11 @@ public abstract class NBTTreeViewer {
         if (hovering) {
             this.hoveringExpandableButton = this.currentPath.copy();
         }
-        part.renderTo(this.gui, matrixStack, this.currentX, this.currentY, EXPAND_COLOR);
+        part.renderTo(guiGraphics, this.currentX, this.currentY, EXPAND_COLOR);
         this.currentX += EXPAND_BUTTON_SIZE + EXPAND_BUTTON_RIGHT_MARGIN;
     }
 
-    public void render(PoseStack matrixStack, Tag nbt, int absMouseX, int absMouseY) {
+    public void render(GuiGraphics guiGraphics, Tag nbt, int absMouseX, int absMouseY) {
         this.hoveringPath = null;
         this.hoveringNBTNode = null;
         this.hoveringExpandableButton = null;
@@ -218,22 +219,24 @@ public abstract class NBTTreeViewer {
         this.updateScroll();
         this.mouseX = absMouseX - this.left;
         this.mouseY = (int) (absMouseY - this.top + this.renderScroll);
-        matrixStack.pushPose();
+        PoseStack poseStack = guiGraphics.pose();
+        poseStack.pushPose();
         try {
-            matrixStack.translate(this.left, this.top - this.renderScroll, 0);
+            poseStack.translate(this.left, this.top - this.renderScroll, 0);
             if (nbt == null) {
-                this.fontRenderer.draw(
-                    matrixStack,
+                guiGraphics.drawString(
+                        this.fontRenderer,
                     I18n.get("integratednbt:nbt_extractor.empty"),
                     SCREEN_EDGE,
                     this.currentY,
-                    EMPTY_COLOR
+                    EMPTY_COLOR,
+                    false
                 );
             } else {
-                this.renderNode(matrixStack, I18n.get("integratednbt:nbt_extractor.root"), nbt);
+                this.renderNode(guiGraphics, I18n.get("integratednbt:nbt_extractor.root"), nbt);
             }
             int totalHeight = this.currentY + SCREEN_EDGE;
-            matrixStack.translate(0, this.renderScroll, 0);
+            poseStack.translate(0, this.renderScroll, 0);
             this.maxScroll = Math.max(totalHeight - this.height, 0);
             if (this.scrollTop.get() > this.maxScroll) {
                 this.scrollTop.set(this.maxScroll);
@@ -242,7 +245,7 @@ public abstract class NBTTreeViewer {
             if (this.maxScroll != 0) {
                 PURE_COLOR.renderToScaled(
                     this.gui,
-                    matrixStack,
+                    guiGraphics.pose(),
                     this.width - SCROLL_BAR_PADDING * 2 - SCROLL_BAR_WIDTH,
                     -1,
                     SCROLL_BAR_PADDING * 2 + SCROLL_BAR_WIDTH + 2,
@@ -251,7 +254,7 @@ public abstract class NBTTreeViewer {
                 );
                 PURE_COLOR.renderToScaled(
                     this.gui,
-                    matrixStack,
+                    guiGraphics.pose(),
                     this.width - SCROLL_BAR_PADDING - SCROLL_BAR_WIDTH,
                     SCROLL_BAR_PADDING + (int) (
                         this.renderScroll / totalHeight * (
@@ -299,15 +302,15 @@ public abstract class NBTTreeViewer {
                             "integratednbt:nbt_extractor.tooltip.right_click_expand"));
                     }
                 }
-                this.gui.renderTooltip(
-                    matrixStack,
+                guiGraphics.renderTooltip(
+                    this.fontRenderer,
                     FontHelper.wrap(list.stream().map(s -> Component.literal(s)).collect(Collectors.toList()), 250),
                     this.mouseX,
                     (int) (this.mouseY - this.renderScroll)
                 );
             }
         } finally {
-            matrixStack.popPose();
+            poseStack.popPose();
         }
     }
 
@@ -354,20 +357,21 @@ public abstract class NBTTreeViewer {
         return nbtId == 9 || nbtId == 10;
     }
 
-    private void renderEmpty(PoseStack matrixStack) {
+    private void renderEmpty(GuiGraphics guiGraphics) {
         this.currentX = (this.currentPath.getDepth() + 1) * INDENTATION + SCREEN_EDGE
             + EXPAND_BUTTON_RIGHT_MARGIN + EXPAND_BUTTON_SIZE;
-        this.fontRenderer.draw(
-            matrixStack,
+        guiGraphics.drawString(
+            this.fontRenderer,
             I18n.get("integratednbt:nbt_extractor.empty"),
             this.currentX,
             this.currentY,
-            EMPTY_COLOR
+            EMPTY_COLOR,
+            false
         );
         this.currentY += this.fontRenderer.lineHeight + LINE_SPACE;
     }
 
-    private void renderNode(PoseStack matrixStack, String label, Tag node) {
+    private void renderNode(GuiGraphics guiGraphics, String label, Tag node) {
         this.currentX = this.currentPath.getDepth() * INDENTATION + SCREEN_EDGE;
         boolean isExpandedIfExpandable = false;
         if (isNodeExpandable(node)) {
@@ -378,11 +382,12 @@ public abstract class NBTTreeViewer {
 
         boolean isHoveringText;
 
+        PoseStack poseStack = guiGraphics.pose();
         // Render Value
         switch (node.getId()) {
             case 1: // Byte
                 isHoveringText = this.renderKVPair(
-                    matrixStack,
+                    guiGraphics,
                     label,
                     String.valueOf(((ByteTag) node).getAsByte()),
                     NUMBER_COLOR
@@ -390,7 +395,7 @@ public abstract class NBTTreeViewer {
                 break;
             case 2: // Short
                 isHoveringText = this.renderKVPair(
-                    matrixStack,
+                    guiGraphics,
                     label,
                     String.valueOf(((ShortTag) node).getAsShort()),
                     NUMBER_COLOR
@@ -398,7 +403,7 @@ public abstract class NBTTreeViewer {
                 break;
             case 3: // Int
                 isHoveringText = this.renderKVPair(
-                    matrixStack,
+                    guiGraphics,
                     label,
                     String.valueOf(((IntTag) node).getAsInt()),
                     NUMBER_COLOR
@@ -406,7 +411,7 @@ public abstract class NBTTreeViewer {
                 break;
             case 4: // Long
                 isHoveringText = this.renderKVPair(
-                    matrixStack,
+                    guiGraphics,
                     label,
                     String.valueOf(((LongTag) node).getAsLong()),
                     NUMBER_COLOR
@@ -414,7 +419,7 @@ public abstract class NBTTreeViewer {
                 break;
             case 5: // Float
                 isHoveringText = this.renderKVPair(
-                    matrixStack,
+                    guiGraphics,
                     label,
                     String.valueOf(((FloatTag) node).getAsFloat()),
                     NUMBER_COLOR
@@ -422,7 +427,7 @@ public abstract class NBTTreeViewer {
                 break;
             case 6: // Double
                 isHoveringText = this.renderKVPair(
-                    matrixStack,
+                    guiGraphics,
                     label,
                     String.valueOf(((DoubleTag) node).getAsDouble()),
                     NUMBER_COLOR
@@ -432,7 +437,7 @@ public abstract class NBTTreeViewer {
             case 11: // Int Array
             case 12: // Long Array
                 isHoveringText = this.renderKVPair(
-                    matrixStack,
+                    guiGraphics,
                     label,
                     "[]",
                     NUMBER_COLOR
@@ -440,7 +445,7 @@ public abstract class NBTTreeViewer {
                 break;
             case 8: // String
                 isHoveringText = this.renderKVPair(
-                    matrixStack,
+                    guiGraphics,
                     label,
                     // Yes, I understand technically we should escape double quotes in the string.
                     // However, I think that will just make it confusing.
@@ -450,9 +455,9 @@ public abstract class NBTTreeViewer {
                 break;
             case 9: // List
             case 10: { // Compound
-                this.renderExpandableButton(matrixStack, isExpandedIfExpandable);
+                this.renderExpandableButton(guiGraphics, isExpandedIfExpandable);
                 isHoveringText = this.renderKVPair(
-                    matrixStack,
+                    guiGraphics,
                     label,
                     (isExpandedIfExpandable ? "" : node.toString()),
                     COMPLEX_COLOR
@@ -472,13 +477,13 @@ public abstract class NBTTreeViewer {
             switch (node.getId()) {
                 case 9: { // List
                     if (((ListTag) node).size() == 0) {
-                        this.renderEmpty(matrixStack);
+                        this.renderEmpty(guiGraphics);
                         break;
                     }
                     int i = 0;
                     for (Tag item : (ListTag) node) {
                         this.currentPath.pushIndex(i);
-                        this.renderNode(matrixStack, "#" + i, item);
+                        this.renderNode(guiGraphics, "#" + i, item);
                         this.currentPath.pop();
                         i++;
                     }
@@ -486,13 +491,13 @@ public abstract class NBTTreeViewer {
                 }
                 case 10: { // Compound
                     if (((CompoundTag) node).size() == 0) {
-                        this.renderEmpty(matrixStack);
+                        this.renderEmpty(guiGraphics);
                         break;
                     }
                     CompoundTag compound = (CompoundTag) node;
                     for (String key : compound.getAllKeys()) {
                         this.currentPath.pushKey(key);
-                        this.renderNode(matrixStack, key, compound.get(key));
+                        this.renderNode(guiGraphics, key, compound.get(key));
                         this.currentPath.pop();
                     }
                     break;

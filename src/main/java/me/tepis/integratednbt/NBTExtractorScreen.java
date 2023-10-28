@@ -8,6 +8,7 @@ import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateExtractionPa
 import me.tepis.integratednbt.network.serverbound.NBTExtractorUpdateOutputModeMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.world.entity.player.Inventory;
@@ -364,29 +365,30 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
     }
 
     @Override
-    protected void renderLabels(PoseStack matrixStack, int mouseX, int mouseY) {
-        this.outputModeButton.drawHover(matrixStack, mouseX, mouseY);
-        this.autoRefreshButton.drawHover(matrixStack, mouseX, mouseY);
+    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        this.outputModeButton.drawHover(guiGraphics, mouseX, mouseY);
+        this.autoRefreshButton.drawHover(guiGraphics, mouseX, mouseY);
     }
 
     @Override
-    public void render(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(matrixStack);
-        super.render(matrixStack, mouseX, mouseY, partialTicks);
-        this.outputModeButton.render(matrixStack, mouseX, mouseY, partialTicks);
-        this.autoRefreshButton.render(matrixStack, mouseX, mouseY, partialTicks);
-        this.renderTooltip(matrixStack, mouseX, mouseY);
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        this.renderBackground(guiGraphics);
+        super.render(guiGraphics, mouseX, mouseY, partialTicks);
+        this.outputModeButton.render(guiGraphics, mouseX, mouseY, partialTicks);
+        this.autoRefreshButton.render(guiGraphics, mouseX, mouseY, partialTicks);
+        this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
 
     @Override
-    protected void renderBg(PoseStack matrixStack, float partialTicks, int mouseX, int mouseY) {
-        this.renderGuiParts(matrixStack);
-        this.fontRenderer.draw(
-            matrixStack,
+    protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
+        this.renderGuiParts(guiGraphics);
+        guiGraphics.drawString(
+            font,
             I18n.get("block.integratednbt.nbt_extractor"),
             this.padding + 8,
             this.padding + 9,
-            4210752
+            4210752,
+                false
         );
         // Scissor test allows restricting rendering to a rectangular portion of the screen.
         // In this case, we only want to render in the screen area of the NBT Extractor.
@@ -400,13 +402,13 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         Slot srcNBTSlot = this.nbtExtractorContainer.getSrcNBTSlot();
         if (!srcNBTSlot.hasItem()) {
             errorCode = null;
-            this.renderWelcome(matrixStack);
+            this.renderWelcome(guiGraphics);
         } else if (errorCode == null) {
-            this.renderLoading(matrixStack);
+            this.renderLoading(guiGraphics);
         } else if (!errorCode.equals(ErrorCode.NO_ERROR)) {
-            this.renderError(matrixStack);
+            this.renderError(guiGraphics);
         } else {
-            this.treeViewer.render(matrixStack, nbt, mouseX, mouseY);
+            this.treeViewer.render(guiGraphics, nbt, mouseX, mouseY);
         }
         glDisable(GL_SCISSOR_TEST);
     }
@@ -429,18 +431,18 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         return false;
     }
 
-    private void renderGuiParts(PoseStack matrixStack) {
+    private void renderGuiParts(GuiGraphics guiGraphics) {
         int padding = this.padding;
         int screenWidth = this.screenWidth;
         int screenHeight = this.screenHeight;
         GUI_TEXTURE.bind();
-        PART0.renderTo(this, matrixStack, padding, padding);
-        PART1.renderToScaled(this, matrixStack, padding + SIDE_BORDER_SIZE, padding, screenWidth, -1);
-        PART2.renderTo(this, matrixStack, this.width - padding - SIDE_BORDER_SIZE, padding);
-        PART3.renderToScaled(this, matrixStack, padding, padding + TOP_BORDER_SIZE, -1, screenHeight);
+        PART0.renderTo(guiGraphics, padding, padding);
+        PART1.renderToScaled(this, guiGraphics.pose(), padding + SIDE_BORDER_SIZE, padding, screenWidth, -1);
+        PART2.renderTo(guiGraphics, this.width - padding - SIDE_BORDER_SIZE, padding);
+        PART3.renderToScaled(this, guiGraphics.pose(), padding, padding + TOP_BORDER_SIZE, -1, screenHeight);
         PART4.renderToScaled(
             this,
-            matrixStack,
+                guiGraphics.pose(),
             padding + SIDE_BORDER_SIZE,
             padding + TOP_BORDER_SIZE,
             screenWidth,
@@ -448,66 +450,64 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
         );
         PART5.renderToScaled(
             this,
-            matrixStack,
+                guiGraphics.pose(),
             this.width - padding - SIDE_BORDER_SIZE,
             padding + TOP_BORDER_SIZE,
             -1,
             screenHeight
         );
         int topOfPart6789 = this.height - padding - INVENTORY_HEIGHT;
-        PART6.renderTo(this, matrixStack, padding, topOfPart6789);
+        PART6.renderTo(guiGraphics, padding, topOfPart6789);
         int part7Width2x = this.width - 2 * padding - 2 * SIDE_BORDER_SIZE - INVENTORY_WIDTH;
         int part7WidthFloor = (int) Math.floor(part7Width2x / 2.0);
         int part7WidthCeil = (int) Math.ceil(part7Width2x / 2.0);
         PART7.renderToScaled(
             this,
-            matrixStack,
+                guiGraphics.pose(),
             padding + SIDE_BORDER_SIZE,
             topOfPart6789,
             part7WidthFloor,
             -1
         );
         PART8.renderTo(
-            this,
-            matrixStack,
+            guiGraphics,
             padding + SIDE_BORDER_SIZE + part7WidthFloor,
             topOfPart6789
         );
         PART7.renderToScaled(
-            this,
-            matrixStack,
+                this,
+                guiGraphics.pose(),
             padding + SIDE_BORDER_SIZE + part7WidthFloor + INVENTORY_WIDTH,
             topOfPart6789,
             part7WidthCeil,
             -1
         );
         PART9.renderTo(
-            this,
-            matrixStack,
+                guiGraphics,
             this.width - padding - SIDE_BORDER_SIZE,
             topOfPart6789
         );
     }
 
-    private void renderWelcome(PoseStack matrixStack) {
+    private void renderWelcome(GuiGraphics guiGraphics) {
         this.renderCenteredTextGroup(
-            matrixStack,
+            guiGraphics,
             I18n.get("integratednbt:nbt_extractor.welcome"),
             0x00FFFF,
             I18n.get("integratednbt:nbt_extractor.welcome.description")
         );
     }
 
-    private void renderLoading(PoseStack matrixStack) {
+    private void renderLoading(GuiGraphics guiGraphics) {
         this.renderCenteredTextGroup(
-            matrixStack,
+            guiGraphics,
             I18n.get("integratednbt:nbt_extractor.loading"),
             0xFFFF00,
             I18n.get("integratednbt:nbt_extractor.loading.description")
         );
     }
 
-    private void renderError(PoseStack matrixStack) {
+    private void renderError(GuiGraphics guiGraphics) {
         String message = "";
         if (errorMessage != null) {
             message = errorMessage.getString();
@@ -525,38 +525,41 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
             }
         }
         this.renderCenteredTextGroup(
-            matrixStack,
+            guiGraphics,
             I18n.get("integratednbt:nbt_extractor.error"),
             0xFF5555,
             message
         );
     }
 
-    private void renderCenteredTextGroup(PoseStack matrixStack, String title, int titleColor, String description) {
-        matrixStack.pushPose();
+    private void renderCenteredTextGroup(GuiGraphics guiGraphics, String title, int titleColor, String description) {
+        PoseStack poseStack = guiGraphics.pose();
+        poseStack.pushPose();
         try {
             int x = this.screenCenterX();
             int y = this.screenCenterY();
             int titleWidth = this.fontRenderer.width(title);
-            matrixStack.pushPose();
+            poseStack.pushPose();
             try {
-                this.scaleAt(matrixStack, x, y, 2);
-                this.fontRenderer.draw(
-                    matrixStack,
+                this.scaleAt(poseStack, x, y, 2);
+                guiGraphics.drawString(
+                    this.fontRenderer,
                     title,
                     -titleWidth / 2f,
                     -this.fontRenderer.lineHeight - 1,
-                    titleColor
+                    titleColor,
+                    false
                 );
             } finally {
-                matrixStack.popPose();
+                poseStack.popPose();
             }
-            this.scaleAt(matrixStack, x, y, 1);
+            this.scaleAt(poseStack, x, y, 1);
             int wrappingWidth = (int) (this.screenWidth * CENTERED_TEXT_MAX_RATIO);
             int descriptionWidth = this.fontRenderer.width(description);
             if (descriptionWidth > wrappingWidth) {
                 // this.fontRenderer.drawSplitString(
-                this.fontRenderer.drawWordWrap(
+                guiGraphics.drawWordWrap(
+                    this.fontRenderer,
                     Component.literal(description),
                     -wrappingWidth / 2,
                     4,
@@ -564,16 +567,17 @@ public class NBTExtractorScreen extends ExtendedContainerScreen<NBTExtractorCont
                     0xFFFFFF
                 );
             } else {
-                this.fontRenderer.draw(
-                    matrixStack,
+                guiGraphics.drawString(
+                    this.fontRenderer,
                     description,
                     -descriptionWidth / 2f,
                     4,
-                    0xFFFFFF
+                    0xFFFFFF,
+                    false
                 );
             }
         } finally {
-            matrixStack.popPose();
+            poseStack.popPose();
         }
     }
 

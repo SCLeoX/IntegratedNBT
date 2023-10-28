@@ -1,6 +1,7 @@
 package me.tepis.integratednbt;
 
 
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.Tag;
@@ -35,6 +36,7 @@ public enum NBTExtractorOutputMode {
             Tag currentNBT,
             NBTPath extractionPath,
             byte defaultNBTId,
+            Level level,
             BlockState blockState
         ) {
             IVariableFacadeHandlerRegistry registry =
@@ -70,6 +72,7 @@ public enum NBTExtractorOutputMode {
                     outputVariableItemStack,
                     NBTExtractedVariableFacadeHandler.getInstance(),
                     factory,
+                    level,
                     null,
                     blockState
                 );
@@ -91,12 +94,13 @@ public enum NBTExtractorOutputMode {
             Tag currentNBT,
             NBTPath extractionPath,
             byte defaultNBTId,
+            Level level,
             BlockState blockState
         ) {
             return getVariableUsingValue(ValueOperator.of(new NBTExtractionOperator(
                 extractionPath,
                 defaultNBTId
-            )), outputVariableItemStack, blockState);
+            )), outputVariableItemStack, level, blockState);
         }
     },
     VALUE(
@@ -112,6 +116,7 @@ public enum NBTExtractorOutputMode {
             Tag currentNBT,
             NBTPath extractionPath,
             byte defaultNBTId,
+            Level level,
             BlockState blockState
         ) {
             sourceVariableFacadeSupplier.get(); // Refresh variable
@@ -119,7 +124,7 @@ public enum NBTExtractorOutputMode {
             IValue value = extractedNBT == null
                 ? NBTValueConverter.getDefaultValue(defaultNBTId)
                 : NBTValueConverter.mapNBTToValue(extractedNBT);
-            return getVariableUsingValue(value, outputVariableItemStack, blockState);
+            return getVariableUsingValue(value, outputVariableItemStack, level, blockState);
         }
     },
     NBT_PATH(
@@ -135,11 +140,13 @@ public enum NBTExtractorOutputMode {
             Tag currentNBT,
             NBTPath extractionPath,
             byte defaultNBTId,
+            Level level,
             BlockState blockState
         ) {
             return getVariableUsingValue(
                 ValueString.of(extractionPath.getCyclopsNBTPath()),
                 outputVariableItemStack,
+                level,
                 blockState
             );
         }
@@ -175,6 +182,7 @@ public enum NBTExtractorOutputMode {
     private static ItemStack getVariableUsingValue(
         IValue value,
         ItemStack outputVariableItemStack,
+        Level level,
         BlockState blockState
     ) {
         IVariableFacadeHandlerRegistry registry = IntegratedDynamics._instance.getRegistryManager()
@@ -197,6 +205,7 @@ public enum NBTExtractorOutputMode {
                     return new ValueTypeVariableFacade(id, value.getType(), value);
                 }
             },
+            level,
             null,
             blockState
         );
@@ -216,6 +225,7 @@ public enum NBTExtractorOutputMode {
         Tag currentNBT,
         NBTPath extractionPath,
         byte defaultNBTId,
+        Level level,
         BlockState blockState
     );
 

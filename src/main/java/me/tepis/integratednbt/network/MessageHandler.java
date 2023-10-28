@@ -4,8 +4,6 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent.Context;
 import net.minecraftforge.network.simple.SimpleChannel;
 
-import java.util.function.Supplier;
-
 public abstract class MessageHandler<TMessage extends Message> {
     public void register(SimpleChannel channel, int id) {
         channel.registerMessage(

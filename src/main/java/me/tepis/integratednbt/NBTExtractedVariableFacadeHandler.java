@@ -2,6 +2,7 @@ package me.tepis.integratednbt;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import org.cyclops.integrateddynamics.api.evaluate.variable.ValueDeseralizationContext;
 import org.cyclops.integrateddynamics.api.item.IVariableFacadeHandler;
 
 import java.util.Optional;
@@ -26,7 +27,7 @@ public class NBTExtractedVariableFacadeHandler
     }
 
     @Override
-    public NBTExtractedVariableFacade getVariableFacade(int id, CompoundTag tag) {
+    public NBTExtractedVariableFacade getVariableFacade(ValueDeseralizationContext valueDeseralizationContext, int id, CompoundTag tag) {
         int sourceNBTId = tag.getInt(KEY_SOURCE_NBT_ID);
         Optional<NBTPath> extractionPath = NBTPath.fromNBT(tag.get(KEY_EXTRACTION_PATH));
         byte defaultNBTId = tag.getByte(KEY_DEFAULT_NBT_ID);

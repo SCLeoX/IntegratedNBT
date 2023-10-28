@@ -18,6 +18,10 @@ public class Texture {
         RenderSystem.setShaderTexture(0, this.resourceLocation);
     }
 
+    public ResourceLocation getResourceLocation() {
+        return resourceLocation;
+    }
+
     public TexturePart createPart(int x, int y, int width, int height) {
         return new TexturePart(this, x, y, width, height);
     }
